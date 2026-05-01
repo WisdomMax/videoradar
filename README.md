@@ -1,82 +1,97 @@
 <div align="center">
   <img src="docs/assets/logo.png" width="120" alt="VideoRadar Logo" />
   <h1>VideoRadar (비디오레이더)</h1>
-  <p><b>"유튜브 데이터의 바다에서 가치 있는 영상을 찾아내는 가장 정교한 레이더"</b></p>
+  <p><b>"유튜브 데이터 분석과 수집을 위한 인텔리전트 리서치 플랫폼"</b></p>
 
   [![Version](https://img.shields.io/badge/version-1.0.0-00897b.svg)]()
   [![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
-  [![Platform](https://img.shields.io/badge/platform-Web-orange.svg)]()
+  [![Node.js](https://img.shields.io/badge/node-v18+-339933.svg)]()
+  [![Supabase](https://img.shields.io/badge/database-Supabase-3ECF8E.svg)]()
 </div>
 
 <br />
 
 ## 🌟 개요 (Overview)
-**VideoRadar**는 단순한 검색 도구를 넘어, 유튜브 생태계 내의 영상 데이터를 분석하여 **성과도(Performance)**와 **기여도(Contribution)**를 자동으로 산출해주는 지능형 리서치 대시보드입니다. 마케터, 크리에이터, 그리고 데이터 분석가들이 가장 효율적인 영상을 빠르게 발굴할 수 있도록 설계되었습니다.
+**VideoRadar**는 유튜브 API를 통해 특정 키워드의 영상 성과를 분석하고, 실시간으로 데이터를 수집하여 성과도가 높은 'Great' 영상을 발굴하는 도구입니다. 복잡한 API 호출과 데이터 정제 과정을 자동화하여 최적의 리서치 환경을 제공합니다.
 
 <br />
 
-## ✨ 핵심 기능 (Key Features)
+## ✨ 주요 기능 (Key Features)
 
-### 📊 지능형 데이터 분석
-- **성과 지표 산출**: 단순 조회수를 넘어 구독자 수 대비 조회수 비율을 계산하여 실제 '성과'가 좋은 영상을 선별합니다.
-- **기여도 평가**: 영상이 채널 성장에 얼마나 기여했는지를 직관적인 등급(Great, Good, Normal, Bad, Worst)으로 표시합니다.
+### 📊 데이터 분석 및 등급 시스템
+- **Performance Index**: 조회수와 구독자 수를 비교 분석하여 영상의 실제 성과를 5단계(Great~Worst)로 평가합니다.
+- **Contribution Score**: 영상이 채널에 미친 영향력을 자동으로 계산하여 시각화합니다.
 
-### 🔍 정교한 필터링 및 리서치
-- **맞춤형 필터**: 쇼츠 포함 여부, 조회수 범위 설정 등을 통해 원하는 데이터만 정밀하게 타겟팅합니다.
-- **실시간 결과 내 검색**: 수집된 수백 개의 결과 중 키워드나 채널명으로 즉시 재필터링이 가능합니다.
+### 🔍 스마트 리서치 도구
+- **다이나믹 필터**: 조회수 범위, 쇼츠 여부, 등급별 필터링을 통해 필요한 데이터만 즉시 추출합니다.
+- **CSV 내보내기**: 분석된 데이터를 엑셀 등에서 활용할 수 있도록 CSV 포맷으로 저장할 수 있습니다.
 
-### 💾 스마트 히스토리 시스템
-- **데이터 캐싱**: 검색했던 키워드는 DB에 안전하게 보관되어 API 사용량을 절약하고 빠른 로딩을 보장합니다.
-- **강제 갱신 기능**: 최신 데이터가 필요할 땐 '다시 검색' 버튼 하나로 캐시를 우회하여 실시간 데이터를 수집합니다.
+### 💾 하이브리드 캐시 시스템
+- **DB 캐싱**: 검색된 데이터는 Supabase DB에 보관되어 API 할당량을 획기적으로 절약합니다.
+- **실시간 갱신**: '다시 검색' 기능을 통해 캐시를 우회하고 최신 유튜브 데이터를 즉시 반영합니다.
 
 <br />
 
 ## 📸 서비스 미리보기 (Screenshots)
 
-### 🖥️ 메인 분석 대시보드 (PC)
-복잡한 데이터를 한눈에 파악할 수 있는 그리드 레이아웃과 실시간 통계 카드를 제공합니다.
+### 1. 메인 분석 대시보드
 ![메인 대시보드](docs/screenshots/pc-main-dashboard.png)
 
-### 📑 검색 히스토리 관리
-과거의 리서치 기록을 체계적으로 관리하고 원할 때 언제든 다시 분석할 수 있습니다.
+### 2. 검색 히스토리 관리
 ![검색 히스토리](docs/screenshots/pc-search-history.png)
 
-### 📱 모바일 최적화 (Mobile First)
-현장에서도 즉시 리서치가 가능하도록 완벽한 카드형 모바일 인터페이스를 지원합니다.
+### 3. 모바일 최적화 레이아웃
 ![모바일 검색 결과](docs/screenshots/mobile-search-result.png)
 
 <br />
 
-## 🛠 기술 스택 (Tech Stack)
+## ⚙️ 환경 설정 (Environment Variables)
+프로젝트 실행을 위해 루트 디렉토리에 `.env` 파일을 생성하고 다음 정보를 입력해야 합니다.
 
-### **Frontend**
-- **Vanilla JavaScript**: 순수 자바스크립트를 통한 극한의 퍼포먼스 최적화
-- **HTML5 / CSS3**: 현대적인 그래픽 요소와 부드러운 애니메이션 구현
+```env
+# 서버 설정
+PORT=3000
 
-### **Backend & Database**
-- **Node.js & Express**: 확장성 있는 서버 아키텍처
-- **Supabase (PostgreSQL)**: 실시간 데이터 동기화 및 안정적인 히스토리 관리
+# 유튜브 API 설정
+YOUTUBE_API_KEY=your_youtube_api_key_here
 
-### **External API**
-- **YouTube Data API v3**: 유튜브의 방대한 원천 데이터 활용
+# Supabase 데이터베이스 설정
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_key
+
+# 캐시 설정 (시간 단위)
+SEARCH_CACHE_TTL_HOURS=168
+```
+
+<br />
+
+## 🛠 기술 스택 (Technical Stack)
+- **Frontend**: Vanilla JavaScript, HTML5, CSS3 (BEM 방법론)
+- **Backend**: Node.js, Express
+- **Database**: Supabase (PostgreSQL)
+- **API**: YouTube Data API v3
 
 <br />
 
 ## 🚀 시작하기 (Getting Started)
 
-### 환경 설정 (.env)
-```env
-YOUTUBE_API_KEY=당신의_API_키
-SUPABASE_URL=당신의_수파베이스_URL
-SUPABASE_KEY=당신의_수파베이스_키
-PORT=3000
-```
+1. **저장소 클론**
+   ```bash
+   git clone https://github.com/WisdomMax/videoradar.git
+   cd videoradar
+   ```
 
-### 실행 방법
-```bash
-npm install
-npm start
-```
+2. **의존성 설치**
+   ```bash
+   npm install
+   ```
+
+3. **서버 실행**
+   ```bash
+   npm run dev
+   ```
+
+<br />
 
 ---
 <div align="center">
