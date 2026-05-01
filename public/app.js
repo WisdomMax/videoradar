@@ -298,7 +298,17 @@ async function refreshHistory(showErrors) {
   try {
     const payload = await fetchJson("/api/history");
     state.saved = payload.saved || [];
-    state.searches = payload.searches || [];
+    
+    // 중복 제거: 같은 검색어(query) 중 가장 최신 것만 유지
+    const rawSearches = payload.searches || [];
+    const uniqueMap = new Map();
+    rawSearches.forEach(item => {
+      if (!uniqueMap.has(item.query)) {
+        uniqueMap.set(item.query, item);
+      }
+    });
+    state.searches = Array.from(uniqueMap.values());
+    
     state.savedVideoIds = new Set(state.saved.map((video) => video.videoId));
   } catch (error) {
     if (showErrors) {
@@ -334,18 +344,28 @@ function renderSearchHistory() {
 
   elements.body.innerHTML = state.searches
     .map(
-      (item) => `
-        <tr>
-          <td>
-            <button class="history-query" type="button" data-query="${escapeHtml(item.query)}">${escapeHtml(item.query)}</button>
-            <span class="channel">${formatFullDate(item.searchedAt)}</span>
-          </td>
-          <td><span class="history-badge ${escapeHtml(item.source || "youtube")}">${escapeHtml(item.source || "youtube")}</span></td>
-          <td>${formatCompact(item.summary?.totalViews || 0)}</td>
-          <td>${formatCompact(item.summary?.averageViews || 0)}</td>
-          <td>${formatNumber(item.count || 0)}</td>
-        </tr>
-      `
+      (item) => {
+        const date = new Date(item.searchedAt);
+        const shortDate = `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+        
+        return `
+          <tr class="history-row">
+            <td>
+              <div class="history-cell-main">
+                <button class="history-query" type="button" data-query="${escapeHtml(item.query)}">${escapeHtml(item.query)}</button>
+                <div class="history-meta-mobile">
+                  <span class="history-badge ${escapeHtml(item.source || "youtube")}">${escapeHtml(item.source || "youtube")}</span>
+                  <span class="history-time-mobile">${shortDate}</span>
+                </div>
+              </div>
+            </td>
+            <td class="desktop-only"><span class="history-badge ${escapeHtml(item.source || "youtube")}">${escapeHtml(item.source || "youtube")}</span></td>
+            <td><span class="mobile-label">총 조회: </span>${formatCompact(item.summary?.totalViews || 0)}</td>
+            <td><span class="mobile-label">평균: </span>${formatCompact(item.summary?.averageViews || 0)}</td>
+            <td class="desktop-only">${formatNumber(item.count || 0)}</td>
+          </tr>
+        `;
+      }
     )
     .join("");
 
@@ -381,10 +401,10 @@ function setHistoryTableHead() {
   elements.head.innerHTML = `
     <tr>
       <th>검색어</th>
-      <th>출처</th>
+      <th class="desktop-only">출처</th>
       <th>총 조회수</th>
       <th>평균 조회수</th>
-      <th>결과 수</th>
+      <th class="desktop-only">결과 수</th>
     </tr>
   `;
 }
