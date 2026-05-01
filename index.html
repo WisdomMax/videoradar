@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VideoRadar</title>
+    <script>
+      fetch("/public/index.html")
+        .then((response) => response.text())
+        .then((html) => {
+          document.open();
+          document.write(html.replaceAll('href="/styles.css"', 'href="/public/styles.css"').replaceAll('src="/app.js"', 'src="/public/app.js"'));
+          document.close();
+        })
+        .catch(() => {
+          document.body.innerHTML = "<main style='font-family:system-ui;padding:32px'>VideoRadar deployment is missing public/index.html.</main>";
+        });
+    </script>
+  </head>
+  <body></body>
+</html>
