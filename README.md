@@ -1,105 +1,84 @@
-# YouTube Research Dashboard
+<div align="center">
+  <img src="docs/assets/logo.png" width="120" alt="VideoRadar Logo" />
+  <h1>VideoRadar (비디오레이더)</h1>
+  <p><b>"유튜브 데이터의 바다에서 가치 있는 영상을 찾아내는 가장 정교한 레이더"</b></p>
 
-키워드로 YouTube 영상을 검색하고 조회수, 구독자, 기여도, 성과도, 노출 확률, Shorts 여부를 비교하는 개인용 리서치 대시보드입니다.
+  [![Version](https://img.shields.io/badge/version-1.0.0-00897b.svg)]()
+  [![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
+  [![Platform](https://img.shields.io/badge/platform-Web-orange.svg)]()
+</div>
 
-## 실행
+<br />
 
-1. Google Cloud Console에서 YouTube Data API v3 키를 발급합니다.
-2. `.env.example`을 복사해 `.env`를 만들고 `YOUTUBE_API_KEY`를 입력합니다.
-3. 서버를 실행합니다.
+## 🌟 개요 (Overview)
+**VideoRadar**는 단순한 검색 도구를 넘어, 유튜브 생태계 내의 영상 데이터를 분석하여 **성과도(Performance)**와 **기여도(Contribution)**를 자동으로 산출해주는 지능형 리서치 대시보드입니다. 마케터, 크리에이터, 그리고 데이터 분석가들이 가장 효율적인 영상을 빠르게 발굴할 수 있도록 설계되었습니다.
 
+<br />
+
+## ✨ 핵심 기능 (Key Features)
+
+### 📊 지능형 데이터 분석
+- **성과 지표 산출**: 단순 조회수를 넘어 구독자 수 대비 조회수 비율을 계산하여 실제 '성과'가 좋은 영상을 선별합니다.
+- **기여도 평가**: 영상이 채널 성장에 얼마나 기여했는지를 직관적인 등급(Great, Good, Normal, Bad, Worst)으로 표시합니다.
+
+### 🔍 정교한 필터링 및 리서치
+- **맞춤형 필터**: 쇼츠 포함 여부, 조회수 범위 설정 등을 통해 원하는 데이터만 정밀하게 타겟팅합니다.
+- **실시간 결과 내 검색**: 수집된 수백 개의 결과 중 키워드나 채널명으로 즉시 재필터링이 가능합니다.
+
+### 💾 스마트 히스토리 시스템
+- **데이터 캐싱**: 검색했던 키워드는 DB에 안전하게 보관되어 API 사용량을 절약하고 빠른 로딩을 보장합니다.
+- **강제 갱신 기능**: 최신 데이터가 필요할 땐 '다시 검색' 버튼 하나로 캐시를 우회하여 실시간 데이터를 수집합니다.
+
+<br />
+
+## 📸 서비스 미리보기 (Screenshots)
+
+### 🖥️ 메인 분석 대시보드 (PC)
+복잡한 데이터를 한눈에 파악할 수 있는 그리드 레이아웃과 실시간 통계 카드를 제공합니다.
+![메인 대시보드](docs/screenshots/pc-main-dashboard.png)
+
+### 📑 검색 히스토리 관리
+과거의 리서치 기록을 체계적으로 관리하고 원할 때 언제든 다시 분석할 수 있습니다.
+![검색 히스토리](docs/screenshots/pc-search-history.png)
+
+### 📱 모바일 최적화 (Mobile First)
+현장에서도 즉시 리서치가 가능하도록 완벽한 카드형 모바일 인터페이스를 지원합니다.
+![모바일 검색 결과](docs/screenshots/mobile-search-result.png)
+
+<br />
+
+## 🛠 기술 스택 (Tech Stack)
+
+### **Frontend**
+- **Vanilla JavaScript**: 순수 자바스크립트를 통한 극한의 퍼포먼스 최적화
+- **HTML5 / CSS3**: 현대적인 그래픽 요소와 부드러운 애니메이션 구현
+
+### **Backend & Database**
+- **Node.js & Express**: 확장성 있는 서버 아키텍처
+- **Supabase (PostgreSQL)**: 실시간 데이터 동기화 및 안정적인 히스토리 관리
+
+### **External API**
+- **YouTube Data API v3**: 유튜브의 방대한 원천 데이터 활용
+
+<br />
+
+## 🚀 시작하기 (Getting Started)
+
+### 환경 설정 (.env)
+```env
+YOUTUBE_API_KEY=당신의_API_키
+SUPABASE_URL=당신의_수파베이스_URL
+SUPABASE_KEY=당신의_수파베이스_키
+PORT=3000
+```
+
+### 실행 방법
 ```bash
-npm run dev
+npm install
+npm start
 ```
 
-브라우저에서 `http://127.0.0.1:5173`을 엽니다.
-
-## 구현 범위
-
-- YouTube Data API `search`, `videos`, `channels` 호출
-- 같은 검색 조건 24시간 캐시
-- YouTube API 요청 간 최소 간격 제한
-- 일일 quota 예산 제한
-- 동일 검색 동시 요청 합치기
-- 검색 결과 테이블
-- 조회수, 구독자, 총 영상 수, 게시일, Shorts 여부 표시
-- 기여도: 조회수 대비 구독자 규모 기반 상대 점수
-- 성과도: 조회수와 일평균 조회수 기반 상대 점수
-- 노출 확률: 일평균 조회수 기반 상대 점수
-- 결과 내 검색, 조회수 범위, 등급, Shorts 필터
-- CSV 내보내기
-- 저장한 영상과 검색 히스토리 저장
-- Supabase 설정이 있으면 Supabase 저장, 없으면 로컬 JSON 저장
-
-## Supabase 연결
-
-Supabase 프로젝트를 만든 뒤 SQL Editor에서 [supabase/schema.sql](./supabase/schema.sql)을 실행합니다.
-
-`.env`에 아래 값을 채웁니다.
-
-```bash
-SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_API_KEY=your_secret_api_key_here
-SUPABASE_SCHEMA=public
-```
-
-`SUPABASE_API_KEY`에는 Supabase의 Secret key를 넣는 것을 권장합니다. 이 값은 서버에서만 사용합니다. 브라우저 코드에는 절대 넣지 않습니다.
-
-Publishable key를 쓰려면 RLS 정책을 직접 열어야 합니다. 이 앱은 개인 서버가 DB 캐시를 쓰는 구조라 Secret key를 `.env`에 두는 방식이 더 단순합니다.
-
-Supabase 설정값이 비어 있으면 앱은 자동으로 `data/*.json` 로컬 저장을 사용합니다.
-
-## Cloudflare Pages 배포
-
-Cloudflare Pages에서는 Node 서버인 `server.js`가 실행되지 않고 `functions/api/*`의 Pages Functions가 API를 처리합니다.
-
-권장 설정:
-
-```text
-Framework preset: None
-Build command: 비워두기
-Build output directory: public
-Root directory: /
-```
-
-Cloudflare 변수:
-
-```bash
-YOUTUBE_API_KEY=...
-SUPABASE_URL=...
-SUPABASE_API_KEY=...
-SUPABASE_SCHEMA=public
-SEARCH_CACHE_TTL_HOURS=24
-YOUTUBE_MIN_INTERVAL_MS=1500
-YOUTUBE_DAILY_QUOTA_LIMIT=9000
-```
-
-`HOST`와 `PORT`는 로컬 Node 서버용이라 Cloudflare Pages에서는 필요하지 않습니다.
-
-이 프로젝트는 Cloudflare 대시보드에서 환경 변수를 관리합니다. `wrangler.toml`을 추가하면 일반 텍스트 변수가 wrangler 설정 관리 대상으로 바뀔 수 있으므로 사용하지 않습니다.
-
-## API 비용과 제한
-
-YouTube Data API는 무료 할당량이 있지만 무제한은 아닙니다. 기본 할당량은 일 단위 quota로 관리되며, 이 앱의 검색 1회는 보통 `search.list` 1회와 `videos.list`, `channels.list` 각 1회를 사용합니다.
-
-현재 기본 보호 설정:
-
-```bash
-SEARCH_CACHE_TTL_HOURS=24
-YOUTUBE_MIN_INTERVAL_MS=1500
-YOUTUBE_DAILY_QUOTA_LIMIT=9000
-```
-
-`search.list`는 quota 비용이 큰 편이라 같은 키워드와 정렬 조건은 캐시에서 재사용하는 방식이 중요합니다. Supabase를 연결하면 `search_cache` 테이블을 우선 사용합니다.
-
-## 📸 Screenshots
-
-### Main Dashboard (PC)
-![Main Dashboard](docs/screenshots/pc-main-dashboard.png)
-
-### Search History
-![Search History](docs/screenshots/pc-search-history.png)
-
-### Mobile View
-![Mobile View](docs/screenshots/mobile-search-result.png)
-
+---
+<div align="center">
+  Copyright © 2026 VideoRadar Project. All rights reserved.
+</div>
