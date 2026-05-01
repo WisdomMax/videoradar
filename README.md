@@ -76,6 +76,8 @@ YOUTUBE_DAILY_QUOTA_LIMIT=9000
 
 `HOST`와 `PORT`는 로컬 Node 서버용이라 Cloudflare Pages에서는 필요하지 않습니다.
 
+이 프로젝트는 Cloudflare 대시보드에서 환경 변수를 관리합니다. `wrangler.toml`을 추가하면 일반 텍스트 변수가 wrangler 설정 관리 대상으로 바뀔 수 있으므로 사용하지 않습니다.
+
 ## API 비용과 제한
 
 YouTube Data API는 무료 할당량이 있지만 무제한은 아닙니다. 기본 할당량은 일 단위 quota로 관리되며, 이 앱의 검색 1회는 보통 `search.list` 1회와 `videos.list`, `channels.list` 각 1회를 사용합니다.
