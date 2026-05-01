@@ -48,7 +48,6 @@ const elements = {
   queryInput: document.querySelector("#queryInput"),
   orderInput: document.querySelector("#orderInput"),
   maxInput: document.querySelector("#maxInput"),
-  demoButton: document.querySelector("#demoButton"),
   clearButton: document.querySelector("#clearButton"),
   exportButton: document.querySelector("#exportButton"),
   tableWrap: document.querySelector("#tableWrap"),
@@ -60,11 +59,12 @@ const elements = {
   minViews: document.querySelector("#minViews"),
   maxViews: document.querySelector("#maxViews"),
   shortsOnly: document.querySelector("#shortsOnly"),
-  shortsOnly: document.querySelector("#shortsOnly"),
   excludeShorts: document.querySelector("#excludeShorts"),
   mobileFilterButton: document.querySelector("#mobileFilterButton"),
   toggleFilters: document.querySelector("#toggleFilters"),
-  filtersContent: document.querySelector("#filtersContent")
+  filtersContent: document.querySelector("#filtersContent"),
+  overlay: document.querySelector("#overlay"),
+  loadingModal: document.querySelector("#loadingModal")
 };
 
 init();
@@ -116,11 +116,7 @@ function bindEvents() {
     await search();
   });
 
-  elements.demoButton.addEventListener("click", () => {
-    state.searchResults = demoVideos;
-    elements.resultHint.textContent = "데모 데이터입니다. API 키 연결 후 실제 YouTube 결과로 대체됩니다.";
-    render(state.searchResults, makeSummary(state.searchResults));
-  });
+
 
   elements.clearButton.addEventListener("click", () => {
     state.filters = {
@@ -151,14 +147,22 @@ function bindEvents() {
   // 모바일 필터 토글
   if (elements.mobileFilterButton) {
     elements.mobileFilterButton.addEventListener("click", () => {
-      elements.filtersPanel.classList.toggle("mobile-show");
+      const isShow = elements.filtersPanel.classList.toggle("mobile-show");
+      elements.overlay.classList.toggle("show", isShow);
     });
   }
   
+  const closeFilters = () => {
+    elements.filtersPanel.classList.remove("mobile-show");
+    elements.overlay.classList.remove("show");
+  };
+
   if (elements.toggleFilters) {
-    elements.toggleFilters.addEventListener("click", () => {
-      elements.filtersPanel.classList.remove("mobile-show");
-    });
+    elements.toggleFilters.addEventListener("click", closeFilters);
+  }
+  
+  if (elements.overlay) {
+    elements.overlay.addEventListener("click", closeFilters);
   }
 
   bindSortHeaders();
@@ -168,6 +172,7 @@ async function search() {
   const query = elements.queryInput.value.trim();
   if (!query) return;
 
+  if (elements.loadingModal) elements.loadingModal.classList.add("show");
   elements.resultHint.textContent = "데이터를 조회하고 있습니다...";
   elements.body.innerHTML = `<tr><td class="empty" colspan="10">검색 중...</td></tr>`;
 
@@ -188,6 +193,8 @@ async function search() {
   } catch (error) {
     elements.resultHint.textContent = error.message;
     elements.body.innerHTML = `<tr><td class="empty" colspan="10">${escapeHtml(error.message)}</td></tr>`;
+  } finally {
+    if (elements.loadingModal) elements.loadingModal.classList.remove("show");
   }
 }
 
@@ -195,7 +202,9 @@ function render(videos = state.videos, summary = makeSummary(videos)) {
   state.videos = videos;
   setMetrics(summary);
   const filtered = getFilteredVideos();
-  elements.filteredCount.textContent = `${filtered.length.toLocaleString("ko-KR")}개`;
+  if (elements.filteredCount) {
+    elements.filteredCount.textContent = `${filtered.length.toLocaleString("ko-KR")}개`;
+  }
 
   if (!filtered.length) {
     elements.body.innerHTML = `<tr><td class="empty" colspan="10">조건에 맞는 영상이 없습니다.</td></tr>`;
@@ -263,6 +272,13 @@ async function showView(view) {
   elements.searchPanel.hidden = state.view !== "search";
   elements.filtersPanel.hidden = state.view === "history";
   elements.exportButton.hidden = state.view === "history";
+  if (elements.mobileFilterButton) {
+    elements.mobileFilterButton.hidden = state.view === "history";
+  }
+  
+  // 뷰 전환 시 열려있던 필터 모달 닫기
+  elements.filtersPanel.classList.remove("mobile-show");
+  if (elements.overlay) elements.overlay.classList.remove("show");
   
   // 뷰 클래스 업데이트
   elements.workspace.classList.remove("is-search", "is-saved", "is-history");
@@ -334,7 +350,9 @@ function renderSearchHistory() {
       performance: { Worst: 0, Bad: 0, Normal: 0, Good: 0, Great: 0 }
     }
   });
-  elements.filteredCount.textContent = `${state.searches.length.toLocaleString("ko-KR")}개`;
+  if (elements.filteredCount) {
+    elements.filteredCount.textContent = `${state.searches.length.toLocaleString("ko-KR")}개`;
+  }
   setHistoryTableHead();
 
   if (!state.searches.length) {

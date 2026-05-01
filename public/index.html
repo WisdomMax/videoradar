@@ -88,11 +88,8 @@
       <section class="workspace">
         <aside id="filtersPanel" class="filters" aria-label="필터">
           <div class="filter-header">
-            <h2>필터</h2>
-            <div class="filter-header-right">
-              <span id="filteredCount">0개</span>
-              <button id="toggleFilters" type="button" class="mobile-only-inline">닫기</button>
-            </div>
+            <h2>필터 설정 <span id="filteredCount" style="font-size: 12px; font-weight: normal; color: var(--muted); margin-left: 8px;">0개</span></h2>
+            <button id="toggleFilters" type="button" class="mobile-only-inline close-btn">✕</button>
           </div>
           <div id="filtersContent">
           <label>
@@ -101,8 +98,10 @@
           </label>
           <label>
             <span>조회수 범위</span>
-            <input id="minViews" type="number" min="0" placeholder="최소" />
-            <input id="maxViews" type="number" min="0" placeholder="최대" />
+            <div class="range-inputs">
+              <input id="minViews" type="number" min="0" placeholder="최소" />
+              <input id="maxViews" type="number" min="0" placeholder="최대" />
+            </div>
           </label>
           <fieldset>
             <legend>기여도</legend>
@@ -114,11 +113,14 @@
           </fieldset>
           <fieldset>
             <legend>형식</legend>
-            <label class="check"><input id="shortsOnly" type="checkbox" /> Shorts만 보기</label>
-            <label class="check"><input id="excludeShorts" type="checkbox" /> Shorts 제거</label>
+            <div class="check-group">
+              <label class="check"><input id="shortsOnly" type="checkbox" /> Shorts만</label>
+              <label class="check"><input id="excludeShorts" type="checkbox" /> Shorts 제외</label>
+            </div>
           </fieldset>
           </div>
         </aside>
+        <div id="overlay" class="overlay"></div>
 
         <section class="results" aria-label="검색 결과">
           <div class="table-actions">
@@ -153,6 +155,22 @@
         </section>
       </section>
     </main>
+
+    <div id="loadingModal" class="loading-modal">
+      <div class="loading-content">
+        <div class="radar-loader">
+          <div class="radar-beam"></div>
+          <div class="radar-ring"></div>
+          <div class="radar-ring"></div>
+          <div class="radar-ring"></div>
+          <div class="radar-point" style="top: 20%; left: 30%;"></div>
+          <div class="radar-point" style="top: 50%; left: 70%;"></div>
+          <div class="radar-point" style="top: 70%; left: 40%;"></div>
+          <div class="radar-center"></div>
+        </div>
+        <p>데이터를 정밀 분석 중입니다...</p>
+      </div>
+    </div>
 
     <template id="gradeTemplate">
       <button type="button" class="grade-filter"></button>

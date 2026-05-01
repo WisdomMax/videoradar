@@ -298,6 +298,22 @@ select:focus {
   top: 88px;
 }
 
+.overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 99;
+}
+
+.overlay.show {
+  display: block;
+}
+
 .filter-header,
 .filter-header-right,
 .table-actions,
@@ -702,19 +718,54 @@ td {
   .filters {
     display: none;
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 380px;
+    max-height: 85vh;
     z-index: 100;
     margin: 0;
-    border: 0;
-    border-radius: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     overflow-y: auto;
+    background: var(--surface);
+    padding: 20px;
   }
 
   .filters.mobile-show {
     display: block;
+    animation: modalIn 0.2s ease-out;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: translate(-50%, -45%) scale(0.95); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+
+  .range-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .check-group {
+    display: flex;
+    gap: 12px;
+  }
+
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #f0f2f5;
+    border: 0;
+    font-size: 18px;
+    color: var(--muted);
   }
 
   .filter-header-right {
@@ -783,3 +834,130 @@ td {
     font-size: 12px;
   }
 }
+
+/* 로딩 모달 스타일 */
+.loading-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  place-items: center;
+}
+
+.loading-modal.show {
+  display: grid;
+}
+
+.loading-content {
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.loading-content p {
+  margin-top: 20px;
+  color: var(--accent-dark);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+/* 레이더 애니메이션 고도화 - 프리미엄 색상 */
+.radar-loader {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 255, 163, 0.3);
+  background: radial-gradient(circle, #1a2a24 0%, #050a09 100%);
+  margin: 0 auto;
+  overflow: hidden;
+  box-shadow: 0 0 30px rgba(0, 255, 163, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.radar-loader::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: 
+    linear-gradient(rgba(0, 255, 163, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 163, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+  z-index: 1;
+}
+
+.radar-beam {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: conic-gradient(from 0deg, rgba(0, 255, 163, 0.8) 0%, rgba(0, 255, 163, 0.1) 15%, transparent 45%);
+  transform-origin: top left;
+  animation: radarRotate 1.8s linear infinite;
+  z-index: 5;
+}
+
+.radar-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid rgba(0, 255, 163, 0.15);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.radar-ring:nth-child(2) { width: 33%; height: 33%; }
+.radar-ring:nth-child(3) { width: 66%; height: 66%; }
+.radar-ring:nth-child(4) { width: 99%; height: 99%; }
+
+.radar-point {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: #00ffa3;
+  border-radius: 50%;
+  box-shadow: 0 0 12px #00ffa3, 0 0 20px rgba(0, 255, 163, 0.5);
+  animation: blip 2s ease-in-out infinite;
+  z-index: 3;
+  opacity: 0;
+}
+
+.radar-point:nth-child(6) { animation-delay: 0.1s; }
+.radar-point:nth-child(7) { animation-delay: 0.7s; }
+.radar-point:nth-child(8) { animation-delay: 1.3s; }
+
+.radar-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: #00ffa3;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 15px #00ffa3;
+  z-index: 10;
+  border: 2px solid #050a09;
+}
+
+@keyframes radarRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes blip {
+  0% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(0.5); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
