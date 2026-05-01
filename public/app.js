@@ -21,7 +21,7 @@ const demoVideos = [
 const state = {
   view: "search",
   videos: [],
-  searchResults: demoVideos,
+  searchResults: [],
   saved: [],
   searches: [],
   savedVideoIds: new Set(),
@@ -42,6 +42,7 @@ const elements = {
   navLinks: document.querySelectorAll("nav a[data-view]"),
   searchPanel: document.querySelector("#searchPanel"),
   filtersPanel: document.querySelector("#filtersPanel"),
+  workspace: document.querySelector(".workspace"),
   pageTitle: document.querySelector("#pageTitle"),
   searchForm: document.querySelector("#searchForm"),
   queryInput: document.querySelector("#queryInput"),
@@ -68,7 +69,9 @@ async function init() {
   renderGradeFilters("contributionFilters", "contribution");
   renderGradeFilters("performanceFilters", "performance");
   bindEvents();
-  render(state.searchResults, makeSummary(state.searchResults));
+
+  // 초기 상태는 빈 결과로 시작 (데모 데이터 대신)
+  render([], makeSummary([]));
 
   try {
     const health = await fetchJson("/api/health");
@@ -80,8 +83,18 @@ async function init() {
     elements.apiStatus.className = "status missing";
   }
 
+  // 히스토리 데이터를 먼저 가져옴
   await refreshHistory(false);
-  showView(location.hash.replace("#", "") || "search");
+  
+  // 마지막 검색어가 있다면 자동으로 검색 수행
+  const lastView = location.hash.replace("#", "");
+  if ((!lastView || lastView === "search") && state.searches.length > 0) {
+    const lastQuery = state.searches[0].query;
+    elements.queryInput.value = lastQuery;
+    await search();
+  } else {
+    showView(lastView || "search");
+  }
 }
 
 function bindEvents() {
@@ -138,7 +151,7 @@ async function search() {
   const query = elements.queryInput.value.trim();
   if (!query) return;
 
-  elements.resultHint.textContent = "YouTube API에서 데이터를 가져오는 중입니다.";
+  elements.resultHint.textContent = "데이터를 조회하고 있습니다...";
   elements.body.innerHTML = `<tr><td class="empty" colspan="10">검색 중...</td></tr>`;
 
   try {
@@ -149,8 +162,8 @@ async function search() {
     });
     const payload = await fetchJson(`/api/search?${params}`);
     state.searchResults = payload.videos;
-    const sourceText = payload.source === "cache" ? "캐시 결과" : payload.source === "shared-request" ? "진행 중인 요청 재사용" : "YouTube API 결과";
-    elements.resultHint.textContent = `"${query}" 검색 결과입니다. ${sourceText}이며 캐시 유지 시간은 ${payload.cacheTtlHours || 24}시간입니다.`;
+    const sourceText = payload.source === "cache" ? "DB에 저장된 캐시 결과" : payload.source === "shared-request" ? "진행 중인 요청 재사용" : "YouTube API 실시간 결과";
+    elements.resultHint.textContent = `"${query}" 검색 결과입니다. (${sourceText}, 캐시 유지: 일주일)`;
     render(state.searchResults, payload.summary);
   } catch (error) {
     elements.resultHint.textContent = error.message;
@@ -172,15 +185,32 @@ function render(videos = state.videos, summary = makeSummary(videos)) {
   elements.body.innerHTML = filtered.map(renderRow).join("");
   document.querySelectorAll(".save-check").forEach((checkbox) => {
     checkbox.addEventListener("change", async () => {
-      const video = state.videos.find((item) => item.videoId === checkbox.value);
-      if (video && checkbox.checked) {
-        await fetchJson("/api/saved", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(video)
+      const videoId = checkbox.value;
+      if (checkbox.checked) {
+        // 저장 처리
+        const video = state.videos.find((item) => item.videoId === videoId);
+        if (video) {
+          await fetchJson("/api/saved", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(video)
+          });
+          state.savedVideoIds.add(videoId);
+          await refreshHistory(false);
+        }
+      } else {
+        // 삭제 처리
+        await fetchJson(`/api/saved?videoId=${encodeURIComponent(videoId)}`, {
+          method: "DELETE"
         });
-        state.savedVideoIds.add(video.videoId);
-        await refreshHistory(false);
+        state.savedVideoIds.delete(videoId);
+        
+        // 현재 뷰가 '수집한 영상'이면 즉시 목록 갱신
+        if (state.view === "saved") {
+          await showView("saved");
+        } else {
+          await refreshHistory(false);
+        }
       }
     });
   });
@@ -213,6 +243,11 @@ async function showView(view) {
   elements.searchPanel.hidden = state.view !== "search";
   elements.filtersPanel.hidden = state.view === "history";
   elements.exportButton.hidden = state.view === "history";
+  
+  // 뷰 클래스 업데이트
+  elements.workspace.classList.remove("is-search", "is-saved", "is-history");
+  elements.workspace.classList.add(`is-${state.view}`);
+  
   elements.tableWrap.classList.toggle("history-table-wrap", state.view === "history");
 
   if (state.view === "search") {

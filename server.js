@@ -23,7 +23,7 @@ const rawSupabaseSchema = process.env.SUPABASE_SCHEMA || "public";
 const supabaseSchema =
   /^[A-Za-z_][A-Za-z0-9_]*$/.test(rawSupabaseSchema) && !rawSupabaseSchema.startsWith("sb_") ? rawSupabaseSchema : "public";
 const hasSupabase = Boolean(supabaseUrl && supabaseApiKey);
-const cacheTtlMs = Number(process.env.SEARCH_CACHE_TTL_HOURS || 24) * 60 * 60 * 1000;
+const cacheTtlMs = Number(process.env.SEARCH_CACHE_TTL_HOURS || 168) * 60 * 60 * 1000;
 const youtubeMinIntervalMs = Number(process.env.YOUTUBE_MIN_INTERVAL_MS || 1500);
 const youtubeDailyQuotaLimit = Number(process.env.YOUTUBE_DAILY_QUOTA_LIMIT || 9000);
 let lastYoutubeRequestAt = 0;
@@ -68,8 +68,9 @@ const server = createServer(async (req, res) => {
       return sendJson(res, 200, await readHistory());
     }
 
-    if (url.pathname === "/api/saved" && req.method === "POST") {
-      return handleSave(req, res);
+    if (url.pathname === "/api/saved") {
+      if (req.method === "POST") return handleSave(req, res);
+      if (req.method === "DELETE") return handleDeleteSaved(url, res);
     }
 
     return serveStatic(url.pathname, res);
@@ -211,6 +212,13 @@ async function fetchChannelsByIds(channelIds) {
 async function handleSave(req, res) {
   const body = await readJsonBody(req);
   const next = await saveVideo(body);
+  sendJson(res, 200, { ok: true, saved: next });
+}
+
+async function handleDeleteSaved(url, res) {
+  const videoId = url.searchParams.get("videoId");
+  if (!videoId) return sendJson(res, 400, { error: "videoId가 필요합니다." });
+  const next = await deleteVideo(videoId);
   sendJson(res, 200, { ok: true, saved: next });
 }
 
@@ -362,6 +370,16 @@ async function readHistory() {
 
 async function appendHistory(payload) {
   if (hasSupabase) {
+    // 1. 기존에 같은 키워드가 있다면 삭제 (중복 방지)
+    try {
+      await supabaseRequest(`search_history?query=eq.${encodeURIComponent(payload.query)}`, {
+        method: "DELETE"
+      });
+    } catch (e) {
+      console.error("기존 히스토리 삭제 중 오류(무시 가능):", e.message);
+    }
+
+    // 2. 새로운 기록 추가
     await supabaseRequest("search_history", {
       method: "POST",
       body: {
@@ -375,16 +393,23 @@ async function appendHistory(payload) {
     return;
   }
 
+  // Local JSON: 기존 같은 키워드 기록이 있다면 제거 후 맨 앞에 추가 (중복 방지)
   const history = await readHistory();
+  const filteredSearches = (history.searches || []).filter(
+    (s) => s.query.trim().toLowerCase() !== payload.query.trim().toLowerCase()
+  );
+
   const nextSearches = [
     {
       query: payload.query,
       searchedAt: payload.searchedAt,
       count: payload.videos.length,
-      summary: payload.summary
+      summary: payload.summary,
+      source: payload.source || "youtube"
     },
-    ...(history.searches || [])
+    ...filteredSearches
   ].slice(0, 100);
+
   await writeJson(historyPath, { ...history, searches: nextSearches });
 }
 
@@ -548,6 +573,20 @@ async function saveVideo(video) {
   const next = exists ? saved : [{ ...video, savedAt }, ...saved].slice(0, 500);
   await writeJson(historyPath, { ...history, saved: next });
   return next;
+}
+
+async function deleteVideo(videoId) {
+  if (hasSupabase) {
+    await supabaseRequest(`saved_videos?video_id=eq.${encodeURIComponent(videoId)}`, {
+      method: "DELETE"
+    });
+    return readSupabaseSavedVideos();
+  }
+
+  const history = await readHistory();
+  const saved = (history.saved || []).filter((v) => v.videoId !== videoId);
+  await writeJson(historyPath, { ...history, saved });
+  return saved;
 }
 
 async function readSupabaseSearchHistory() {
