@@ -9,6 +9,9 @@ export async function health(env) {
     cacheTtlHours: Math.round(config.cacheTtlMs / 60 / 60 / 1000),
     youtubeMinIntervalMs: config.youtubeMinIntervalMs,
     youtubeDailyQuotaLimit: config.youtubeDailyQuotaLimit,
+    hasSupabaseUrl: Boolean(config.supabaseUrl),
+    hasSupabaseApiKey: Boolean(config.supabaseApiKey),
+    supabaseSchema: config.supabaseSchema,
     storage: config.hasSupabase ? "supabase" : "missing-supabase",
     quota: config.hasSupabase ? await readUsage(config) : null
   };

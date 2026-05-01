@@ -52,6 +52,9 @@ const server = createServer(async (req, res) => {
         cacheTtlHours: Math.round(cacheTtlMs / 60 / 60 / 1000),
         youtubeMinIntervalMs,
         youtubeDailyQuotaLimit,
+        hasSupabaseUrl: Boolean(supabaseUrl),
+        hasSupabaseApiKey: Boolean(supabaseApiKey),
+        supabaseSchema,
         storage: hasSupabase ? "supabase" : "local-json",
         quota: await readUsage()
       });
