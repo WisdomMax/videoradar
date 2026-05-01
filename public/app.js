@@ -19,7 +19,12 @@ const demoVideos = [
 ];
 
 const state = {
+  view: "search",
   videos: [],
+  searchResults: demoVideos,
+  saved: [],
+  searches: [],
+  savedVideoIds: new Set(),
   filters: {
     text: "",
     minViews: "",
@@ -34,6 +39,10 @@ const state = {
 
 const elements = {
   apiStatus: document.querySelector("#apiStatus"),
+  navLinks: document.querySelectorAll("nav a[data-view]"),
+  searchPanel: document.querySelector("#searchPanel"),
+  filtersPanel: document.querySelector("#filtersPanel"),
+  pageTitle: document.querySelector("#pageTitle"),
   searchForm: document.querySelector("#searchForm"),
   queryInput: document.querySelector("#queryInput"),
   orderInput: document.querySelector("#orderInput"),
@@ -57,7 +66,7 @@ async function init() {
   renderGradeFilters("contributionFilters", "contribution");
   renderGradeFilters("performanceFilters", "performance");
   bindEvents();
-  render(demoVideos, makeSummary(demoVideos));
+  render(state.searchResults, makeSummary(state.searchResults));
 
   try {
     const health = await fetchJson("/api/health");
@@ -67,18 +76,30 @@ async function init() {
     elements.apiStatus.textContent = "서버 확인 실패";
     elements.apiStatus.className = "status missing";
   }
+
+  await refreshHistory(false);
+  showView(location.hash.replace("#", "") || "search");
 }
 
 function bindEvents() {
+  elements.navLinks.forEach((link) => {
+    link.addEventListener("click", async (event) => {
+      event.preventDefault();
+      const view = link.dataset.view;
+      history.replaceState(null, "", `#${view}`);
+      await showView(view);
+    });
+  });
+
   elements.searchForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     await search();
   });
 
   elements.demoButton.addEventListener("click", () => {
-    state.videos = demoVideos;
+    state.searchResults = demoVideos;
     elements.resultHint.textContent = "데모 데이터입니다. API 키 연결 후 실제 YouTube 결과로 대체됩니다.";
-    render();
+    render(state.searchResults, makeSummary(state.searchResults));
   });
 
   elements.clearButton.addEventListener("click", () => {
@@ -133,10 +154,10 @@ async function search() {
       maxResults: elements.maxInput.value
     });
     const payload = await fetchJson(`/api/search?${params}`);
-    state.videos = payload.videos;
+    state.searchResults = payload.videos;
     const sourceText = payload.source === "cache" ? "캐시 결과" : payload.source === "shared-request" ? "진행 중인 요청 재사용" : "YouTube API 결과";
     elements.resultHint.textContent = `"${query}" 검색 결과입니다. ${sourceText}이며 캐시 유지 시간은 ${payload.cacheTtlHours || 24}시간입니다.`;
-    render();
+    render(state.searchResults, payload.summary);
   } catch (error) {
     elements.resultHint.textContent = error.message;
     elements.body.innerHTML = `<tr><td class="empty" colspan="10">${escapeHtml(error.message)}</td></tr>`;
@@ -159,20 +180,23 @@ function render(videos = state.videos, summary = makeSummary(videos)) {
     checkbox.addEventListener("change", async () => {
       const video = state.videos.find((item) => item.videoId === checkbox.value);
       if (video && checkbox.checked) {
-        await fetch("/api/saved", {
+        await fetchJson("/api/saved", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(video)
         });
+        state.savedVideoIds.add(video.videoId);
+        await refreshHistory(false);
       }
     });
   });
 }
 
 function renderRow(video) {
+  const checked = state.savedVideoIds.has(video.videoId) ? "checked" : "";
   return `
     <tr>
-      <td><input class="save-check" type="checkbox" value="${escapeHtml(video.videoId)}" aria-label="영상 저장" /></td>
+      <td><input class="save-check" type="checkbox" value="${escapeHtml(video.videoId)}" aria-label="영상 저장" ${checked} /></td>
       <td><img class="thumb" src="${escapeHtml(video.thumbnail)}" alt="" loading="lazy" /></td>
       <td>
         <a class="video-title" href="${escapeHtml(video.url)}" target="_blank" rel="noreferrer">${escapeHtml(video.title)}</a>
@@ -187,6 +211,103 @@ function renderRow(video) {
       <td>${formatDate(video.publishedAt)}</td>
     </tr>
   `;
+}
+
+async function showView(view) {
+  state.view = ["search", "saved", "history"].includes(view) ? view : "search";
+  elements.navLinks.forEach((link) => link.classList.toggle("active", link.dataset.view === state.view));
+  elements.searchPanel.hidden = state.view !== "search";
+  elements.filtersPanel.hidden = state.view === "history";
+  elements.exportButton.hidden = state.view === "history";
+
+  if (state.view === "search") {
+    elements.pageTitle.textContent = "영상 찾기";
+    elements.resultHint.textContent ||= "YouTube API 키를 연결한 뒤 키워드를 검색하세요.";
+    render(state.searchResults, makeSummary(state.searchResults));
+    return;
+  }
+
+  await refreshHistory(true);
+
+  if (state.view === "saved") {
+    elements.pageTitle.textContent = "수집한 영상";
+    elements.resultHint.textContent = `저장한 영상 ${state.saved.length.toLocaleString("ko-KR")}개입니다.`;
+    render(state.saved, makeSummary(state.saved));
+    return;
+  }
+
+  elements.pageTitle.textContent = "검색 히스토리";
+  elements.resultHint.textContent = `최근 검색 기록 ${state.searches.length.toLocaleString("ko-KR")}개입니다.`;
+  renderSearchHistory();
+}
+
+async function refreshHistory(showErrors) {
+  try {
+    const payload = await fetchJson("/api/history");
+    state.saved = payload.saved || [];
+    state.searches = payload.searches || [];
+    state.savedVideoIds = new Set(state.saved.map((video) => video.videoId));
+  } catch (error) {
+    if (showErrors) {
+      elements.resultHint.textContent = error.message;
+      elements.body.innerHTML = `<tr><td class="empty" colspan="10">${escapeHtml(error.message)}</td></tr>`;
+    }
+  }
+}
+
+function renderSearchHistory() {
+  setMetrics({
+    count: state.searches.length,
+    totalViews: state.searches.reduce((sum, item) => sum + Number(item.summary?.totalViews || 0), 0),
+    averageViews: state.searches.length
+      ? Math.round(state.searches.reduce((sum, item) => sum + Number(item.summary?.averageViews || 0), 0) / state.searches.length)
+      : 0,
+    medianViews: state.searches.length
+      ? Math.round(state.searches.reduce((sum, item) => sum + Number(item.summary?.medianViews || 0), 0) / state.searches.length)
+      : 0,
+    shorts: state.searches.reduce((sum, item) => sum + Number(item.summary?.shorts || 0), 0),
+    gradeCounts: {
+      contribution: { Worst: 0, Bad: 0, Normal: 0, Good: 0, Great: 0 },
+      performance: { Worst: 0, Bad: 0, Normal: 0, Good: 0, Great: 0 }
+    }
+  });
+  elements.filteredCount.textContent = `${state.searches.length.toLocaleString("ko-KR")}개`;
+
+  if (!state.searches.length) {
+    elements.body.innerHTML = `<tr><td class="empty" colspan="10">검색 히스토리가 없습니다.</td></tr>`;
+    return;
+  }
+
+  elements.body.innerHTML = state.searches
+    .map(
+      (item) => `
+        <tr>
+          <td>-</td>
+          <td><span class="history-badge ${escapeHtml(item.source || "youtube")}">${escapeHtml(item.source || "youtube")}</span></td>
+          <td>
+            <button class="history-query" type="button" data-query="${escapeHtml(item.query)}">${escapeHtml(item.query)}</button>
+            <span class="channel">${formatFullDate(item.searchedAt)}</span>
+          </td>
+          <td>${formatCompact(item.summary?.totalViews || 0)}</td>
+          <td>${formatCompact(item.summary?.averageSubscribers || 0)}</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>${formatNumber(item.count || 0)}</td>
+          <td>${formatDate(item.searchedAt)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  document.querySelectorAll(".history-query").forEach((button) => {
+    button.addEventListener("click", async () => {
+      elements.queryInput.value = button.dataset.query;
+      history.replaceState(null, "", "#search");
+      await showView("search");
+      await search();
+    });
+  });
 }
 
 function renderGradeFilters(targetId, key) {
@@ -293,8 +414,8 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url);
+async function fetchJson(url, options) {
+  const response = await fetch(url, options);
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || "요청에 실패했습니다.");
   return data;
@@ -355,6 +476,16 @@ function formatCompact(value) {
 
 function formatDate(value) {
   return new Intl.DateTimeFormat("ko-KR", { year: "2-digit", month: "2-digit", day: "2-digit" }).format(new Date(value));
+}
+
+function formatFullDate(value) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
 }
 
 function escapeHtml(value) {

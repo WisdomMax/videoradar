@@ -26,6 +26,10 @@ body {
   color: var(--text);
 }
 
+[hidden] {
+  display: none !important;
+}
+
 button,
 input,
 select {
@@ -452,6 +456,38 @@ td {
 .save-check {
   width: 16px;
   height: 16px;
+}
+
+.history-query {
+  height: auto;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  font-weight: 800;
+  text-align: left;
+}
+
+.history-query:hover {
+  color: var(--accent-dark);
+}
+
+.history-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 78px;
+  height: 28px;
+  border-radius: 999px;
+  background: #eef1f4;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.history-badge.cache {
+  background: var(--soft);
+  color: var(--accent-dark);
 }
 
 @media (max-width: 1080px) {

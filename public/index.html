@@ -3,22 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>YouTube Research Dashboard</title>
+    <title>VideoRadar</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <header class="topbar">
       <a class="brand" href="/">
-        <span class="brand-mark">YT</span>
+        <span class="brand-mark">VR</span>
         <span>
-          <strong>videofinder</strong>
-          <small>YouTube research dashboard</small>
+          <strong>VideoRadar</strong>
+          <small>유튜브 영상 리서치 레이더</small>
         </span>
       </a>
       <nav aria-label="Primary">
-        <a class="active" href="#">영상 찾기</a>
-        <a href="#saved">수집한 영상</a>
-        <a href="#history">검색 히스토리</a>
+        <a class="active" href="#search" data-view="search">영상 찾기</a>
+        <a href="#saved" data-view="saved">수집한 영상</a>
+        <a href="#history" data-view="history">검색 히스토리</a>
       </nav>
       <div class="top-actions">
         <span id="apiStatus" class="status">API 확인 중</span>
@@ -26,7 +26,7 @@
     </header>
 
     <main>
-      <section class="search-panel">
+      <section id="searchPanel" class="search-panel">
         <form id="searchForm" class="search-form">
           <label class="search-box">
             <span>검색어</span>
@@ -80,7 +80,7 @@
       </section>
 
       <section class="workspace">
-        <aside class="filters" aria-label="필터">
+        <aside id="filtersPanel" class="filters" aria-label="필터">
           <div class="filter-header">
             <h2>필터</h2>
             <span id="filteredCount">0개</span>
@@ -112,7 +112,7 @@
         <section class="results" aria-label="검색 결과">
           <div class="table-actions">
             <div>
-              <h1>영상 찾기</h1>
+              <h1 id="pageTitle">영상 찾기</h1>
               <p id="resultHint">YouTube API 키를 연결한 뒤 키워드를 검색하세요.</p>
             </div>
             <button id="exportButton" type="button">CSV 내보내기</button>
