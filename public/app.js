@@ -176,6 +176,7 @@ async function search({ force = false } = {}) {
       maxResults: elements.maxInput.value
     });
     if (force) params.set("force", "true");
+    params.set("_t", Date.now()); // 매번 다른 URL로 인식하게 하여 브라우저 캐시 방지
     const payload = await fetchJson(`/api/search?${params}`);
     state.searchResults = payload.videos;
     const sourceText = payload.source === "cache" ? "최근 분석된 결과" : payload.source === "shared-request" ? "요청 데이터 재사용" : "실시간 분석 결과";

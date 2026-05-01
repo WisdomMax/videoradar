@@ -85,6 +85,7 @@ server.listen(port, host, () => {
 });
 
 async function handleSearch(url, res) {
+  const force = url.searchParams.get("force") === "true";
   const query = (url.searchParams.get("q") || "").trim();
   const maxResults = clamp(Number(url.searchParams.get("maxResults") || 300), 1, 500);
   const order = url.searchParams.get("order") || "relevance";
@@ -93,24 +94,21 @@ async function handleSearch(url, res) {
   const cacheKey = makeCacheKey({ query, maxResults, order, publishedAfter, publishedBefore });
 
   if (!query) return sendJson(res, 400, { error: "검색어를 입력해 주세요." });
-  if (!youtubeApiKey) {
-    return sendJson(res, 400, {
-      error: "YOUTUBE_API_KEY가 설정되어 있지 않습니다. .env 파일에 YouTube Data API 키를 넣어 주세요."
-    });
-  }
-  const force = url.searchParams.get("force") === "true";
 
-  const cached = await getCachedSearch(cacheKey);
-  if (cached && !force) {
-    await appendHistory({ ...cached, source: "cache" });
-    return sendJson(res, 200, { ...cached, source: "cache" });
-  }
+  if (!force) {
+    const cached = await getCachedSearch(cacheKey);
+    if (cached) {
+      await appendHistory({ ...cached, source: "cache" });
+      return sendJson(res, 200, { ...cached, source: "cache" });
+    }
 
-  if (activeSearches.has(cacheKey)) {
-    const payload = await activeSearches.get(cacheKey);
-    return sendJson(res, 200, { ...payload, source: "shared-request" });
+    if (activeSearches.has(cacheKey)) {
+      const payload = await activeSearches.get(cacheKey);
+      return sendJson(res, 200, { ...payload, source: "shared-request" });
+    }
   }
 
+  console.log(`[Server] YouTube API 호출 시작: "${query}" (Force: ${force})`);
   const searchPromise = fetchAndCacheSearch({
     query,
     maxResults,
