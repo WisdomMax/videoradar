@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Research Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">YT</span>
+        <span>
+          <strong>videofinder</strong>
+          <small>YouTube research dashboard</small>
+        </span>
+      </a>
+      <nav aria-label="Primary">
+        <a class="active" href="#">영상 찾기</a>
+        <a href="#saved">수집한 영상</a>
+        <a href="#history">검색 히스토리</a>
+      </nav>
+      <div class="top-actions">
+        <span id="apiStatus" class="status">API 확인 중</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="search-panel">
+        <form id="searchForm" class="search-form">
+          <label class="search-box">
+            <span>검색어</span>
+            <input id="queryInput" type="search" placeholder="단어 또는 문장 입력" autocomplete="off" required />
+          </label>
+          <label>
+            <span>정렬</span>
+            <select id="orderInput">
+              <option value="relevance">관련도</option>
+              <option value="viewCount">조회수</option>
+              <option value="date">최신순</option>
+              <option value="rating">평점</option>
+            </select>
+          </label>
+          <label>
+            <span>개수</span>
+            <select id="maxInput">
+              <option>25</option>
+              <option selected>50</option>
+            </select>
+          </label>
+          <button type="submit">검색</button>
+        </form>
+        <div class="tools">
+          <button id="demoButton" type="button">데모 데이터</button>
+          <button id="clearButton" type="button">필터 초기화</button>
+        </div>
+      </section>
+
+      <section class="metrics" aria-label="검색 요약">
+        <article>
+          <span>검색 결과</span>
+          <strong id="metricCount">0</strong>
+        </article>
+        <article>
+          <span>총 조회수</span>
+          <strong id="metricViews">0</strong>
+        </article>
+        <article>
+          <span>평균 조회수</span>
+          <strong id="metricAverage">0</strong>
+        </article>
+        <article>
+          <span>중앙값</span>
+          <strong id="metricMedian">0</strong>
+        </article>
+        <article>
+          <span>Shorts</span>
+          <strong id="metricShorts">0</strong>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <aside class="filters" aria-label="필터">
+          <div class="filter-header">
+            <h2>필터</h2>
+            <span id="filteredCount">0개</span>
+          </div>
+          <label>
+            <span>결과 내 검색</span>
+            <input id="innerSearch" type="search" placeholder="제목 + 채널명" />
+          </label>
+          <label>
+            <span>조회수 범위</span>
+            <input id="minViews" type="number" min="0" placeholder="최소" />
+            <input id="maxViews" type="number" min="0" placeholder="최대" />
+          </label>
+          <fieldset>
+            <legend>기여도</legend>
+            <div id="contributionFilters" class="grade-grid"></div>
+          </fieldset>
+          <fieldset>
+            <legend>성과도</legend>
+            <div id="performanceFilters" class="grade-grid"></div>
+          </fieldset>
+          <fieldset>
+            <legend>형식</legend>
+            <label class="check"><input id="shortsOnly" type="checkbox" /> Shorts만 보기</label>
+            <label class="check"><input id="excludeShorts" type="checkbox" /> Shorts 제거</label>
+          </fieldset>
+        </aside>
+
+        <section class="results" aria-label="검색 결과">
+          <div class="table-actions">
+            <div>
+              <h1>영상 찾기</h1>
+              <p id="resultHint">YouTube API 키를 연결한 뒤 키워드를 검색하세요.</p>
+            </div>
+            <button id="exportButton" type="button">CSV 내보내기</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>선택</th>
+                  <th>썸네일</th>
+                  <th data-sort="title">제목</th>
+                  <th data-sort="views">조회수</th>
+                  <th data-sort="subscribers">구독자</th>
+                  <th data-sort="contribution">기여도</th>
+                  <th data-sort="performance">성과도</th>
+                  <th data-sort="exposure">노출 확률</th>
+                  <th data-sort="totalChannelVideos">총 영상 수</th>
+                  <th data-sort="publishedAt">게시일</th>
+                </tr>
+              </thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <template id="gradeTemplate">
+      <button type="button" class="grade-filter"></button>
+    </template>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
