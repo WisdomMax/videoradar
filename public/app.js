@@ -202,7 +202,7 @@ function renderRow(video) {
       <td><span class="grade ${video.performance.tone}">${video.performance.label}</span></td>
       <td><span class="grade ${video.exposure.tone}">${video.exposure.label}</span></td>
       <td>${formatNumber(video.totalChannelVideos)}</td>
-      <td>${formatDate(video.publishedAt)}</td>
+      <td class="date-cell">${formatDate(video.publishedAt)}</td>
     </tr>
   `;
 }

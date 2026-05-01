@@ -446,15 +446,15 @@ td {
   line-height: 1.05;
 }
 
-.grade::before {
-  content: ".....";
-  letter-spacing: 1px;
-}
-
 .empty {
   padding: 46px 20px;
   text-align: center;
   color: var(--muted);
+}
+
+.date-cell {
+  min-width: 88px;
+  white-space: nowrap;
 }
 
 .save-check {

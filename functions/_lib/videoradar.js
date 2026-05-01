@@ -47,7 +47,7 @@ export async function searchVideos(env, url) {
   assertSupabase(config);
 
   const query = (url.searchParams.get("q") || "").trim();
-  const maxResults = clamp(Number(url.searchParams.get("maxResults") || 25), 1, 50);
+  const maxResults = clamp(Number(url.searchParams.get("maxResults") || 300), 1, 500);
   const order = url.searchParams.get("order") || "relevance";
   const publishedAfter = url.searchParams.get("publishedAfter") || "";
   const publishedBefore = url.searchParams.get("publishedBefore") || "";
@@ -77,22 +77,8 @@ export async function searchVideos(env, url) {
 }
 
 async function fetchAndCacheSearch(config, { query, maxResults, order, publishedAfter, publishedBefore, cacheKey }) {
-  const searchParams = new URLSearchParams({
-    key: config.youtubeApiKey,
-    part: "snippet",
-    type: "video",
-    q: query,
-    maxResults: String(maxResults),
-    order,
-    safeSearch: "none",
-    videoEmbeddable: "true"
-  });
-
-  if (publishedAfter) searchParams.set("publishedAfter", `${publishedAfter}T00:00:00Z`);
-  if (publishedBefore) searchParams.set("publishedBefore", `${publishedBefore}T23:59:59Z`);
-
-  const search = await youtubeFetch(config, `https://www.googleapis.com/youtube/v3/search?${searchParams}`, 100);
-  const videoIds = search.items.map((item) => item.id.videoId).filter(Boolean);
+  const searchItems = await fetchSearchItems(config, { query, maxResults, order, publishedAfter, publishedBefore });
+  const videoIds = searchItems.map((item) => item.id.videoId).filter(Boolean);
   if (!videoIds.length) {
     const emptyPayload = makePayload(config, query, [], "youtube");
     await setCachedSearch(config, cacheKey, emptyPayload);
@@ -100,22 +86,9 @@ async function fetchAndCacheSearch(config, { query, maxResults, order, published
     return emptyPayload;
   }
 
-  const videosParams = new URLSearchParams({
-    key: config.youtubeApiKey,
-    part: "snippet,statistics,contentDetails",
-    id: videoIds.join(",")
-  });
-  const videos = await youtubeFetch(config, `https://www.googleapis.com/youtube/v3/videos?${videosParams}`, 1);
-
+  const videos = { items: await fetchVideosByIds(config, videoIds) };
   const channelIds = [...new Set(videos.items.map((item) => item.snippet.channelId).filter(Boolean))];
-  const channelParams = new URLSearchParams({
-    key: config.youtubeApiKey,
-    part: "snippet,statistics",
-    id: channelIds.join(",")
-  });
-  const channels = channelIds.length
-    ? await youtubeFetch(config, `https://www.googleapis.com/youtube/v3/channels?${channelParams}`, 1)
-    : { items: [] };
+  const channels = { items: await fetchChannelsByIds(config, channelIds) };
 
   const channelMap = new Map(channels.items.map((channel) => [channel.id, channel]));
   const enriched = videos.items.map((video) => normalizeVideo(video, channelMap.get(video.snippet.channelId)));
@@ -125,6 +98,63 @@ async function fetchAndCacheSearch(config, { query, maxResults, order, published
   await setCachedSearch(config, cacheKey, payload);
   await appendHistory(config, payload);
   return payload;
+}
+
+async function fetchSearchItems(config, { query, maxResults, order, publishedAfter, publishedBefore }) {
+  const items = [];
+  let pageToken = "";
+
+  while (items.length < maxResults) {
+    const searchParams = new URLSearchParams({
+      key: config.youtubeApiKey,
+      part: "snippet",
+      type: "video",
+      q: query,
+      maxResults: String(Math.min(50, maxResults - items.length)),
+      order,
+      safeSearch: "none",
+      videoEmbeddable: "true"
+    });
+
+    if (publishedAfter) searchParams.set("publishedAfter", `${publishedAfter}T00:00:00Z`);
+    if (publishedBefore) searchParams.set("publishedBefore", `${publishedBefore}T23:59:59Z`);
+    if (pageToken) searchParams.set("pageToken", pageToken);
+
+    const search = await youtubeFetch(config, `https://www.googleapis.com/youtube/v3/search?${searchParams}`, 100);
+    items.push(...search.items);
+    pageToken = search.nextPageToken || "";
+    if (!pageToken || !search.items.length) break;
+  }
+
+  return items;
+}
+
+async function fetchVideosByIds(config, videoIds) {
+  const items = [];
+  for (const ids of chunk(videoIds, 50)) {
+    const videosParams = new URLSearchParams({
+      key: config.youtubeApiKey,
+      part: "snippet,statistics,contentDetails",
+      id: ids.join(",")
+    });
+    const videos = await youtubeFetch(config, `https://www.googleapis.com/youtube/v3/videos?${videosParams}`, 1);
+    items.push(...videos.items);
+  }
+  return items;
+}
+
+async function fetchChannelsByIds(config, channelIds) {
+  const items = [];
+  for (const ids of chunk(channelIds, 50)) {
+    const channelParams = new URLSearchParams({
+      key: config.youtubeApiKey,
+      part: "snippet,statistics",
+      id: ids.join(",")
+    });
+    const channels = await youtubeFetch(config, `https://www.googleapis.com/youtube/v3/channels?${channelParams}`, 1);
+    items.push(...channels.items);
+  }
+  return items;
 }
 
 function normalizeVideo(video, channel) {
@@ -463,6 +493,14 @@ function getPacificDateKey() {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
+}
+
+function chunk(items, size) {
+  const chunks = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
 }
 
 function sleep(ms) {
