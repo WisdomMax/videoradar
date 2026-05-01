@@ -360,8 +360,7 @@ async function supabaseRequest(config, pathname, options = {}) {
 function makeConfig(env) {
   const rawSchema = env.SUPABASE_SCHEMA || "public";
   const supabaseSchema = /^[A-Za-z_][A-Za-z0-9_]*$/.test(rawSchema) && !rawSchema.startsWith("sb_") ? rawSchema : "public";
-  const defaultSupabaseUrl = "https://jymbqgkkndikriovfbxw.supabase.co";
-  const supabaseUrl = (env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || env.VITE_SUPABASE_URL || defaultSupabaseUrl).replace(/\/$/, "");
+  const supabaseUrl = (env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
   const supabaseApiKey = env.SUPABASE_API_KEY || env.SUPABASE_SERVICE_ROLE_KEY || "";
 
   return {
@@ -377,7 +376,12 @@ function makeConfig(env) {
 }
 
 function assertSupabase(config) {
-  if (!config.hasSupabase) throw httpError(500, "Supabase 환경 변수가 설정되어 있지 않습니다.");
+  if (config.hasSupabase) return;
+  if (!config.supabaseUrl && !config.supabaseApiKey) {
+    throw httpError(500, "SUPABASE_URL과 SUPABASE_API_KEY가 Cloudflare 변수에 설정되어 있지 않습니다.");
+  }
+  if (!config.supabaseUrl) throw httpError(500, "SUPABASE_URL이 Cloudflare 변수에 설정되어 있지 않습니다.");
+  throw httpError(500, "SUPABASE_API_KEY가 Cloudflare 변수에 설정되어 있지 않습니다.");
 }
 
 export function json(data, status = 200) {
@@ -389,7 +393,7 @@ export function json(data, status = 200) {
 
 export function jsonError(error) {
   const status = error.status || 500;
-  const message = status === 500 ? "서버 처리 중 오류가 발생했습니다." : error.message;
+  const message = error.expose ? error.message : status === 500 ? "서버 처리 중 오류가 발생했습니다." : error.message;
   console.error(error);
   return json({ error: message }, status);
 }
@@ -397,6 +401,7 @@ export function jsonError(error) {
 function httpError(status, message) {
   const error = new Error(message);
   error.status = status;
+  error.expose = true;
   return error;
 }
 

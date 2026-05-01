@@ -70,8 +70,9 @@ async function init() {
 
   try {
     const health = await fetchJson("/api/health");
-    elements.apiStatus.textContent = health.hasApiKey ? "API 연결 준비됨" : "API 키 필요";
-    elements.apiStatus.className = `status ${health.hasApiKey ? "ready" : "missing"}`;
+    const ready = health.hasApiKey && health.storage !== "missing-supabase";
+    elements.apiStatus.textContent = ready ? "API 연결 준비됨" : health.hasApiKey ? "DB 설정 필요" : "API 키 필요";
+    elements.apiStatus.className = `status ${ready ? "ready" : "missing"}`;
   } catch {
     elements.apiStatus.textContent = "서버 확인 실패";
     elements.apiStatus.className = "status missing";
