@@ -474,11 +474,36 @@ table {
 }
 
 .history-table-wrap table {
-  min-width: 100%;
+  width: 100% !important;
+  table-layout: fixed !important; /* 열 너비 고정 모드 */
+  border-collapse: collapse !important;
 }
 
+.history-table-wrap th, 
+.history-table-wrap td {
+  text-align: left !important;
+  padding: 12px 15px !important;
+  vertical-align: middle !important;
+}
+
+/* PC에서 각 열의 너비 배분 (5개 열 기준) */
+.history-table-wrap th:nth-child(1),
+.history-table-wrap td:nth-child(1) { width: 35% !important; } /* 검색어 */
+
+.history-table-wrap th:nth-child(2),
+.history-table-wrap td:nth-child(2) { width: 15% !important; } /* 출처 */
+
+.history-table-wrap th:nth-child(3),
+.history-table-wrap td:nth-child(3) { width: 18% !important; } /* 총 조회수 */
+
+.history-table-wrap th:nth-child(4),
+.history-table-wrap td:nth-child(4) { width: 18% !important; } /* 평균 조회수 */
+
+.history-table-wrap th:nth-child(5),
+.history-table-wrap td:nth-child(5) { width: 14% !important; } /* 결과 수 */
+
 .history-table-wrap tr:hover td {
-  background: #fcfdfe;
+  background: #f8f9fa !important;
 }
 
 th,
@@ -1278,3 +1303,48 @@ td {
 
 
 
+
+/* 정렬 초기화 버튼 스타일 */
+.secondary-btn {
+  background: #f1f3f4 !important;
+  color: #5f6368 !important;
+  border: 1px solid #dadce0 !important;
+  font-weight: 500 !important;
+  padding: 8px 14px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: background 0.2s !important;
+  font-size: 13px !important;
+}
+
+.secondary-btn:hover {
+  background: #e8eaed !important;
+}
+
+/* PC 전용 클래스: 모바일에서 숨김 */
+@media (max-width: 768px) {
+  .pc-only {
+    display: none !important;
+  }
+}
+
+/* ── 모바일 히스토리 정밀 튜닝 (가로형 유지) ── */
+@media (max-width: 480px) {
+  .history-row td {
+    font-size: 11px !important; /* 수치 데이터 폰트 살짝 축소 */
+    padding: 10px 4px !important; /* 좌우 패딩 줄여서 공간 확보 */
+  }
+  
+  .history-query {
+    font-size: 14px !important; /* 검색어 크기 적절히 조절 */
+  }
+  
+  .mobile-label {
+    font-size: 10px !important; /* '총 조회:' 레이블 크기 축소 */
+    margin-right: 2px !important;
+  }
+
+  .history-time-mobile {
+    font-size: 10px !important;
+  }
+}

@@ -22,6 +22,7 @@ const state = {
   view: "search",
   videos: [],
   searchResults: [],
+  originalResults: [], // 정렬 초기화를 위한 원본 백업
   saved: [],
   searches: [],
   savedVideoIds: new Set(),
@@ -60,7 +61,8 @@ const elements = {
   maxViews: document.querySelector("#maxViews"),
   shortsOnly: document.querySelector("#shortsOnly"),
   excludeShorts: document.querySelector("#excludeShorts"),
-  mobileFilterButton: document.querySelector("#mobileFilterButton"),
+  metricsSection: document.querySelector(".metrics"),
+  resetSortButton: document.querySelector("#resetSortButton"),
   toggleFilters: document.querySelector("#toggleFilters"),
   filtersContent: document.querySelector("#filtersContent"),
   overlay: document.querySelector("#overlay"),
@@ -179,6 +181,12 @@ async function search({ force = false } = {}) {
     params.set("_t", Date.now()); // 매번 다른 URL로 인식하게 하여 브라우저 캐시 방지
     const payload = await fetchJson(`/api/search?${params}`);
     state.searchResults = payload.videos;
+    state.originalResults = [...payload.videos]; // 원본 데이터 백업
+    
+    // 정렬 초기화 버튼 표시 (PC)
+    const resetBtn = document.querySelector("#resetSortButton");
+    if (resetBtn) resetBtn.style.display = "inline-flex";
+
     const sourceText = payload.source === "cache" ? "최근 분석된 결과" : payload.source === "shared-request" ? "요청 데이터 재사용" : "실시간 분석 결과";
     
     // 메인 타이틀에 검색어 강조 표시
@@ -340,6 +348,9 @@ async function showView(view) {
   elements.exportButton.hidden = state.view === "history";
   if (elements.mobileFilterButton) {
     elements.mobileFilterButton.hidden = state.view === "history";
+  }
+  if (elements.metricsSection) {
+    elements.metricsSection.hidden = state.view === "history";
   }
   
   // 뷰 전환 시 열려있던 필터 모달 닫기
@@ -687,3 +698,11 @@ function formatFullDate(value) {
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]);
 }
+
+// 정렬 초기화 이벤트
+document.querySelector("#resetSortButton")?.addEventListener("click", () => {
+  if (state.originalResults.length > 0) {
+    state.searchResults = [...state.originalResults];
+    render(state.searchResults, makeSummary(state.searchResults));
+  }
+});
