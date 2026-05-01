@@ -50,6 +50,8 @@ const elements = {
   demoButton: document.querySelector("#demoButton"),
   clearButton: document.querySelector("#clearButton"),
   exportButton: document.querySelector("#exportButton"),
+  tableWrap: document.querySelector("#tableWrap"),
+  head: document.querySelector("#resultsHead"),
   body: document.querySelector("#resultsBody"),
   resultHint: document.querySelector("#resultHint"),
   filteredCount: document.querySelector("#filteredCount"),
@@ -129,16 +131,7 @@ function bindEvents() {
   elements.shortsOnly.addEventListener("change", () => updateFilter("shortsOnly", elements.shortsOnly.checked));
   elements.excludeShorts.addEventListener("change", () => updateFilter("excludeShorts", elements.excludeShorts.checked));
 
-  document.querySelectorAll("th[data-sort]").forEach((th) => {
-    th.addEventListener("click", () => {
-      const key = th.dataset.sort;
-      state.sort = {
-        key,
-        direction: state.sort.key === key && state.sort.direction === "desc" ? "asc" : "desc"
-      };
-      render();
-    });
-  });
+  bindSortHeaders();
 }
 
 async function search() {
@@ -220,8 +213,10 @@ async function showView(view) {
   elements.searchPanel.hidden = state.view !== "search";
   elements.filtersPanel.hidden = state.view === "history";
   elements.exportButton.hidden = state.view === "history";
+  elements.tableWrap.classList.toggle("history-table-wrap", state.view === "history");
 
   if (state.view === "search") {
+    setVideoTableHead();
     elements.pageTitle.textContent = "영상 찾기";
     elements.resultHint.textContent ||= "YouTube API 키를 연결한 뒤 키워드를 검색하세요.";
     render(state.searchResults, makeSummary(state.searchResults));
@@ -231,6 +226,7 @@ async function showView(view) {
   await refreshHistory(true);
 
   if (state.view === "saved") {
+    setVideoTableHead();
     elements.pageTitle.textContent = "수집한 영상";
     elements.resultHint.textContent = `저장한 영상 ${state.saved.length.toLocaleString("ko-KR")}개입니다.`;
     render(state.saved, makeSummary(state.saved));
@@ -273,6 +269,7 @@ function renderSearchHistory() {
     }
   });
   elements.filteredCount.textContent = `${state.searches.length.toLocaleString("ko-KR")}개`;
+  setHistoryTableHead();
 
   if (!state.searches.length) {
     elements.body.innerHTML = `<tr><td class="empty" colspan="10">검색 히스토리가 없습니다.</td></tr>`;
@@ -283,19 +280,14 @@ function renderSearchHistory() {
     .map(
       (item) => `
         <tr>
-          <td>-</td>
-          <td><span class="history-badge ${escapeHtml(item.source || "youtube")}">${escapeHtml(item.source || "youtube")}</span></td>
           <td>
             <button class="history-query" type="button" data-query="${escapeHtml(item.query)}">${escapeHtml(item.query)}</button>
             <span class="channel">${formatFullDate(item.searchedAt)}</span>
           </td>
+          <td><span class="history-badge ${escapeHtml(item.source || "youtube")}">${escapeHtml(item.source || "youtube")}</span></td>
           <td>${formatCompact(item.summary?.totalViews || 0)}</td>
-          <td>${formatCompact(item.summary?.averageSubscribers || 0)}</td>
-          <td>-</td>
-          <td>-</td>
-          <td>-</td>
+          <td>${formatCompact(item.summary?.averageViews || 0)}</td>
           <td>${formatNumber(item.count || 0)}</td>
-          <td>${formatDate(item.searchedAt)}</td>
         </tr>
       `
     )
@@ -307,6 +299,49 @@ function renderSearchHistory() {
       history.replaceState(null, "", "#search");
       await showView("search");
       await search();
+    });
+  });
+}
+
+function setVideoTableHead() {
+  elements.head.innerHTML = `
+    <tr>
+      <th>선택</th>
+      <th>썸네일</th>
+      <th data-sort="title">제목</th>
+      <th data-sort="views">조회수</th>
+      <th data-sort="subscribers">구독자</th>
+      <th data-sort="contribution">기여도</th>
+      <th data-sort="performance">성과도</th>
+      <th data-sort="exposure">노출 확률</th>
+      <th data-sort="totalChannelVideos">총 영상 수</th>
+      <th data-sort="publishedAt">게시일</th>
+    </tr>
+  `;
+  bindSortHeaders();
+}
+
+function setHistoryTableHead() {
+  elements.head.innerHTML = `
+    <tr>
+      <th>검색어</th>
+      <th>출처</th>
+      <th>총 조회수</th>
+      <th>평균 조회수</th>
+      <th>결과 수</th>
+    </tr>
+  `;
+}
+
+function bindSortHeaders() {
+  document.querySelectorAll("th[data-sort]").forEach((th) => {
+    th.addEventListener("click", () => {
+      const key = th.dataset.sort;
+      state.sort = {
+        key,
+        direction: state.sort.key === key && state.sort.direction === "desc" ? "asc" : "desc"
+      };
+      render();
     });
   });
 }

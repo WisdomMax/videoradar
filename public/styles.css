@@ -380,6 +380,10 @@ table {
   min-width: 1120px;
 }
 
+.history-table-wrap table {
+  min-width: 720px;
+}
+
 th,
 td {
   border-bottom: 1px solid var(--line);
