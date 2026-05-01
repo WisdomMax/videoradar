@@ -360,7 +360,8 @@ async function supabaseRequest(config, pathname, options = {}) {
 function makeConfig(env) {
   const rawSchema = env.SUPABASE_SCHEMA || "public";
   const supabaseSchema = /^[A-Za-z_][A-Za-z0-9_]*$/.test(rawSchema) && !rawSchema.startsWith("sb_") ? rawSchema : "public";
-  const supabaseUrl = (env.SUPABASE_URL || "").replace(/\/$/, "");
+  const defaultSupabaseUrl = "https://jymbqgkkndikriovfbxw.supabase.co";
+  const supabaseUrl = (env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || env.VITE_SUPABASE_URL || defaultSupabaseUrl).replace(/\/$/, "");
   const supabaseApiKey = env.SUPABASE_API_KEY || env.SUPABASE_SERVICE_ROLE_KEY || "";
 
   return {

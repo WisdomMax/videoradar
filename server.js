@@ -17,7 +17,8 @@ loadDotEnv(path.join(__dirname, ".env"));
 const port = Number(process.env.PORT || 5173);
 const host = process.env.HOST || "127.0.0.1";
 const youtubeApiKey = process.env.YOUTUBE_API_KEY || "";
-const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+const defaultSupabaseUrl = "https://jymbqgkkndikriovfbxw.supabase.co";
+const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || defaultSupabaseUrl).replace(/\/$/, "");
 const supabaseApiKey = process.env.SUPABASE_API_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const rawSupabaseSchema = process.env.SUPABASE_SCHEMA || "public";
 const supabaseSchema =
