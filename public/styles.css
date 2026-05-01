@@ -72,15 +72,11 @@ button:hover {
   min-width: 190px;
 }
 
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 7px;
-  background: var(--accent);
-  color: white;
-  font-weight: 800;
+.brand-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  object-fit: cover;
 }
 
 .brand strong,
@@ -135,7 +131,13 @@ nav a.active {
 }
 
 main {
-  padding: 28px 24px;
+  padding: 24px;
+}
+
+@media (max-width: 760px) {
+  main {
+    padding: 12px;
+  }
 }
 
 .search-panel,
@@ -151,6 +153,27 @@ main {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
+}
+
+.search-controls {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+
+@media (max-width: 760px) {
+  .search-panel {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 8px;
+  }
+  
+  .search-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 6px;
+    align-items: end;
+  }
 }
 
 .search-form {
@@ -210,6 +233,26 @@ select:focus {
   margin-bottom: 16px;
 }
 
+@media (max-width: 760px) {
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  
+  .metrics article {
+    padding: 10px 12px;
+  }
+  
+  .metrics strong {
+    font-size: 18px;
+  }
+  
+  .metrics span {
+    font-size: 11px;
+  }
+}
+
 .metrics article {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -256,11 +299,30 @@ select:focus {
 }
 
 .filter-header,
-.table-actions {
+.filter-header-right,
+.table-actions,
+.results-top-buttons {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.results-top-buttons {
+  gap: 8px;
+}
+
+#resultHint {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--soft);
+  padding: 1px 4px;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.mobile-only, .mobile-only-inline {
+  display: none;
 }
 
 h1,
@@ -271,6 +333,11 @@ p {
 
 h1 {
   font-size: 20px;
+}
+
+.query-highlight {
+  color: var(--accent-dark);
+  font-weight: 800;
 }
 
 h2 {
@@ -531,39 +598,140 @@ td {
 
 @media (max-width: 760px) {
   .topbar {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
-    padding: 14px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 6px 10px;
+    min-height: auto;
+  }
+
+  .brand {
+    min-width: auto;
+    gap: 4px;
+  }
+
+  .brand strong {
+    font-size: 14px;
+  }
+
+  .brand small, .brand-mark {
+    display: none;
   }
 
   nav {
-    width: 100%;
-    overflow-x: auto;
+    width: auto;
+    flex: none;
+    overflow: visible;
   }
 
   nav a {
-    padding: 8px 10px;
+    padding: 6px 4px;
+    font-size: 12px;
     white-space: nowrap;
+    border-bottom-width: 1.5px;
+  }
+
+  .top-actions {
+    display: none;
   }
 
   main {
-    padding: 16px;
+    padding: 8px 10px;
   }
 
   .search-panel {
     align-items: stretch;
     flex-direction: column;
+    margin-bottom: 6px;
   }
 
   .search-form,
-  .search-form label,
-  .search-box input,
-  .tools button {
+  .search-box,
+  .search-box input {
     width: 100%;
   }
 
-  .metrics {
-    grid-template-columns: 1fr;
+  .search-form {
+    gap: 4px;
+  }
+
+  .search-box span {
+    display: none;
+  }
+
+  .search-controls label span {
+    display: none;
+  }
+
+  .search-controls {
+    margin-top: 4px;
+  }
+
+  .search-controls select, .search-controls button {
+    height: 34px;
+  }
+
+  .grade-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
+  .grade-filter {
+    height: 42px;
+    font-size: 12px;
+  }
+  
+  .filters {
+    padding: 12px;
+  }
+  
+  .filters label, .filters fieldset {
+    margin-top: 12px;
+  }
+
+  .mobile-only {
+    display: block;
+  }
+  
+  .mobile-only-inline {
+    display: inline-block;
+  }
+
+  /* 모바일 필터 토글 스타일 */
+  .filters {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow-y: auto;
+  }
+
+  .filters.mobile-show {
+    display: block;
+  }
+
+  .filter-header-right {
+    gap: 8px;
+  }
+
+  .results-top-buttons button {
+    padding: 0 8px;
+    font-size: 13px;
+    height: 34px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  #exportButton {
+    font-size: 10px;
+    color: var(--muted);
+    padding: 0 6px;
   }
 }

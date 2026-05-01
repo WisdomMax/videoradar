@@ -60,7 +60,11 @@ const elements = {
   minViews: document.querySelector("#minViews"),
   maxViews: document.querySelector("#maxViews"),
   shortsOnly: document.querySelector("#shortsOnly"),
-  excludeShorts: document.querySelector("#excludeShorts")
+  shortsOnly: document.querySelector("#shortsOnly"),
+  excludeShorts: document.querySelector("#excludeShorts"),
+  mobileFilterButton: document.querySelector("#mobileFilterButton"),
+  toggleFilters: document.querySelector("#toggleFilters"),
+  filtersContent: document.querySelector("#filtersContent")
 };
 
 init();
@@ -143,6 +147,19 @@ function bindEvents() {
   elements.maxViews.addEventListener("input", () => updateFilter("maxViews", elements.maxViews.value));
   elements.shortsOnly.addEventListener("change", () => updateFilter("shortsOnly", elements.shortsOnly.checked));
   elements.excludeShorts.addEventListener("change", () => updateFilter("excludeShorts", elements.excludeShorts.checked));
+  
+  // 모바일 필터 토글
+  if (elements.mobileFilterButton) {
+    elements.mobileFilterButton.addEventListener("click", () => {
+      elements.filtersPanel.classList.toggle("mobile-show");
+    });
+  }
+  
+  if (elements.toggleFilters) {
+    elements.toggleFilters.addEventListener("click", () => {
+      elements.filtersPanel.classList.remove("mobile-show");
+    });
+  }
 
   bindSortHeaders();
 }
@@ -163,7 +180,10 @@ async function search() {
     const payload = await fetchJson(`/api/search?${params}`);
     state.searchResults = payload.videos;
     const sourceText = payload.source === "cache" ? "DB에 저장된 캐시 결과" : payload.source === "shared-request" ? "진행 중인 요청 재사용" : "YouTube API 실시간 결과";
-    elements.resultHint.textContent = `"${query}" 검색 결과입니다. (${sourceText}, 캐시 유지: 일주일)`;
+    
+    // 메인 타이틀에 검색어 강조 표시
+    elements.pageTitle.innerHTML = `<span class="query-highlight">"${query}"</span> 검색 결과`;
+    elements.resultHint.textContent = `${sourceText} (캐시 유지: 일주일)`;
     render(state.searchResults, payload.summary);
   } catch (error) {
     elements.resultHint.textContent = error.message;
@@ -252,7 +272,8 @@ async function showView(view) {
 
   if (state.view === "search") {
     setVideoTableHead();
-    elements.pageTitle.textContent = "영상 찾기";
+    const currentQuery = elements.queryInput.value.trim();
+    elements.pageTitle.innerHTML = currentQuery ? `<span class="query-highlight">"${currentQuery}"</span> 검색 결과` : "영상 찾기";
     elements.resultHint.textContent ||= "YouTube API 키를 연결한 뒤 키워드를 검색하세요.";
     render(state.searchResults, makeSummary(state.searchResults));
     return;

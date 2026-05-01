@@ -4,12 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VideoRadar</title>
+    <link rel="icon" href="/radar-icon.png" />
+    <link rel="apple-touch-icon" href="/radar-icon.png" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <header class="topbar">
       <a class="brand" href="/">
-        <span class="brand-mark">VR</span>
+        <img src="/radar-icon.png" alt="Radar" class="brand-icon" />
         <span>
           <strong>VideoRadar</strong>
           <small>유튜브 영상 리서치 레이더</small>
@@ -32,29 +34,30 @@
             <span>검색어</span>
             <input id="queryInput" type="search" placeholder="단어 또는 문장 입력" autocomplete="off" required />
           </label>
-          <label>
-            <span>정렬</span>
-            <select id="orderInput">
-              <option value="relevance">관련도</option>
-              <option value="viewCount">조회수</option>
-              <option value="date">최신순</option>
-              <option value="rating">평점</option>
-            </select>
-          </label>
-          <label>
-            <span>개수</span>
-            <select id="maxInput">
-              <option>50</option>
-              <option>100</option>
-              <option>200</option>
-              <option selected>300</option>
-              <option>500</option>
-            </select>
-          </label>
-          <button type="submit">검색</button>
+          <div class="search-controls">
+            <label>
+              <span>정렬</span>
+              <select id="orderInput">
+                <option value="relevance">관련도</option>
+                <option value="viewCount">조회수</option>
+                <option value="date">최신순</option>
+                <option value="rating">평점</option>
+              </select>
+            </label>
+            <label>
+              <span>개수</span>
+              <select id="maxInput">
+                <option>50</option>
+                <option>100</option>
+                <option>200</option>
+                <option selected>300</option>
+                <option>500</option>
+              </select>
+            </label>
+            <button type="submit">검색</button>
+          </div>
         </form>
         <div class="tools">
-          <button id="demoButton" type="button">데모 데이터</button>
           <button id="clearButton" type="button">필터 초기화</button>
         </div>
       </section>
@@ -86,8 +89,12 @@
         <aside id="filtersPanel" class="filters" aria-label="필터">
           <div class="filter-header">
             <h2>필터</h2>
-            <span id="filteredCount">0개</span>
+            <div class="filter-header-right">
+              <span id="filteredCount">0개</span>
+              <button id="toggleFilters" type="button" class="mobile-only-inline">닫기</button>
+            </div>
           </div>
+          <div id="filtersContent">
           <label>
             <span>결과 내 검색</span>
             <input id="innerSearch" type="search" placeholder="제목 + 채널명" />
@@ -110,6 +117,7 @@
             <label class="check"><input id="shortsOnly" type="checkbox" /> Shorts만 보기</label>
             <label class="check"><input id="excludeShorts" type="checkbox" /> Shorts 제거</label>
           </fieldset>
+          </div>
         </aside>
 
         <section class="results" aria-label="검색 결과">
@@ -118,7 +126,10 @@
               <h1 id="pageTitle">영상 찾기</h1>
               <p id="resultHint">YouTube API 키를 연결한 뒤 키워드를 검색하세요.</p>
             </div>
-            <button id="exportButton" type="button">CSV 내보내기</button>
+            <div class="results-top-buttons">
+              <button id="mobileFilterButton" type="button" class="mobile-only">필터</button>
+              <button id="exportButton" type="button">CSV 내보내기</button>
+            </div>
           </div>
           <div id="tableWrap" class="table-wrap">
             <table>
