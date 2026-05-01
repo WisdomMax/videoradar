@@ -91,15 +91,3 @@ YOUTUBE_DAILY_QUOTA_LIMIT=9000
 ```
 
 `search.list`는 quota 비용이 큰 편이라 같은 키워드와 정렬 조건은 캐시에서 재사용하는 방식이 중요합니다. Supabase를 연결하면 `search_cache` 테이블을 우선 사용합니다.
-
-## 📸 Screenshots
-
-### Main Dashboard (PC)
-![Main Dashboard](docs/screenshots/pc-main-dashboard.png)
-
-### Search History
-![Search History](docs/screenshots/pc-search-history.png)
-
-### Mobile View
-![Mobile View](docs/screenshots/mobile-search-result.png)
-
