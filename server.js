@@ -98,9 +98,10 @@ async function handleSearch(url, res) {
       error: "YOUTUBE_API_KEY가 설정되어 있지 않습니다. .env 파일에 YouTube Data API 키를 넣어 주세요."
     });
   }
+  const force = url.searchParams.get("force") === "true";
 
   const cached = await getCachedSearch(cacheKey);
-  if (cached) {
+  if (cached && !force) {
     await appendHistory({ ...cached, source: "cache" });
     return sendJson(res, 200, { ...cached, source: "cache" });
   }
@@ -130,7 +131,8 @@ async function handleSearch(url, res) {
 
 async function fetchAndCacheSearch({ query, maxResults, order, publishedAfter, publishedBefore, cacheKey }) {
   const searchItems = await fetchSearchItems({ query, maxResults, order, publishedAfter, publishedBefore });
-  const videoIds = searchItems.map((item) => item.id.videoId).filter(Boolean);
+  const rawVideoIds = searchItems.map((item) => item.id.videoId).filter(Boolean);
+  const videoIds = [...new Set(rawVideoIds)]; // YouTube API 중복 결과 제거
   if (!videoIds.length) {
     const emptyPayload = makePayload(query, [], "youtube");
     await setCachedSearch(cacheKey, emptyPayload);

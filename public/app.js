@@ -118,24 +118,17 @@ function bindEvents() {
 
 
 
-  elements.clearButton.addEventListener("click", () => {
-    state.filters = {
-      text: "",
-      minViews: "",
-      maxViews: "",
-      contribution: new Set(),
-      performance: new Set(),
-      shortsOnly: false,
-      excludeShorts: false
-    };
-    elements.innerSearch.value = "";
-    elements.minViews.value = "";
-    elements.maxViews.value = "";
-    elements.shortsOnly.checked = false;
-    elements.excludeShorts.checked = false;
-    document.querySelectorAll(".grade-filter.active").forEach((button) => button.classList.remove("active"));
-    render();
-  });
+  elements.clearButton.addEventListener("click", resetFilters);
+
+  // 필터 팝업 내 초기화 버튼
+  const clearButton2 = document.querySelector("#clearButton2");
+  if (clearButton2) clearButton2.addEventListener("click", resetFilters);
+
+  // 다시검색 버튼
+  const forceSearchButton = document.querySelector("#forceSearchButton");
+  if (forceSearchButton) {
+    forceSearchButton.addEventListener("click", () => search({ force: true }));
+  }
 
   elements.exportButton.addEventListener("click", exportCsv);
   elements.innerSearch.addEventListener("input", () => updateFilter("text", elements.innerSearch.value));
@@ -168,7 +161,7 @@ function bindEvents() {
   bindSortHeaders();
 }
 
-async function search() {
+async function search({ force = false } = {}) {
   const query = elements.queryInput.value.trim();
   if (!query) return;
 
@@ -182,13 +175,14 @@ async function search() {
       order: elements.orderInput.value,
       maxResults: elements.maxInput.value
     });
+    if (force) params.set("force", "true");
     const payload = await fetchJson(`/api/search?${params}`);
     state.searchResults = payload.videos;
-    const sourceText = payload.source === "cache" ? "DB에 저장된 캐시 결과" : payload.source === "shared-request" ? "진행 중인 요청 재사용" : "YouTube API 실시간 결과";
+    const sourceText = payload.source === "cache" ? "최근 분석된 결과" : payload.source === "shared-request" ? "요청 데이터 재사용" : "실시간 분석 결과";
     
     // 메인 타이틀에 검색어 강조 표시
     elements.pageTitle.innerHTML = `<span class="query-highlight">"${query}"</span> 검색 결과`;
-    elements.resultHint.textContent = `${sourceText} (캐시 유지: 일주일)`;
+    elements.resultHint.textContent = sourceText;
     render(state.searchResults, payload.summary);
   } catch (error) {
     elements.resultHint.textContent = error.message;
@@ -196,6 +190,25 @@ async function search() {
   } finally {
     if (elements.loadingModal) elements.loadingModal.classList.remove("show");
   }
+}
+
+function resetFilters() {
+  state.filters = {
+    text: "",
+    minViews: "",
+    maxViews: "",
+    contribution: new Set(),
+    performance: new Set(),
+    shortsOnly: false,
+    excludeShorts: false
+  };
+  elements.innerSearch.value = "";
+  elements.minViews.value = "";
+  elements.maxViews.value = "";
+  elements.shortsOnly.checked = false;
+  elements.excludeShorts.checked = false;
+  document.querySelectorAll(".grade-filter.active").forEach((button) => button.classList.remove("active"));
+  render();
 }
 
 function render(videos = state.videos, summary = makeSummary(videos)) {
@@ -245,26 +258,78 @@ function render(videos = state.videos, summary = makeSummary(videos)) {
   });
 }
 
+function isMobile() {
+  return window.matchMedia("(max-width: 992px)").matches;
+}
+
 function renderRow(video) {
   const checked = state.savedVideoIds.has(video.videoId) ? "checked" : "";
+
+  if (isMobile()) {
+    // ── 모바일: 풀사이즈 썸네일 + 오버레이 체크박스 ──
+    return `
+      <tr class="mobile-card-row">
+        <td colspan="10" class="mobile-card-cell">
+          <div class="mobile-card-inner">
+            <div class="mobile-thumb-wrap">
+              <img class="mobile-thumb" src="${escapeHtml(video.thumbnail)}" alt="" loading="lazy" />
+              <label class="mobile-check-overlay" title="수집하기">
+                <input class="save-check" type="checkbox" value="${escapeHtml(video.videoId)}" aria-label="영상 저장" ${checked} />
+              </label>
+            </div>
+            <div class="mobile-card-body">
+              <a class="mobile-card-title" href="${escapeHtml(video.url)}" target="_blank" rel="noreferrer">${escapeHtml(video.title)}</a>
+              <span class="mobile-card-channel">${escapeHtml(video.channelTitle)}</span>
+              <div class="mobile-card-stats">
+                <span>조회 <strong>${formatNumber(video.views)}</strong></span>
+                <span class="dot">•</span>
+                <span>구독 <strong>${formatNumber(video.subscribers)}</strong></span>
+                <span class="dot">•</span>
+                <span>영상 <strong>${formatNumber(video.totalChannelVideos)}</strong></span>
+                <span class="dot">•</span>
+                <span>${formatDate(video.publishedAt)}</span>
+              </div>
+              <div class="mobile-card-grades">
+                <span class="mobile-grade-item">
+                  <span class="mobile-grade-label">기여도</span>
+                  <span class="grade ${video.contribution.tone}">${video.contribution.label}</span>
+                </span>
+                <span class="mobile-grade-item">
+                  <span class="mobile-grade-label">성과도</span>
+                  <span class="grade ${video.performance.tone}">${video.performance.label}</span>
+                </span>
+                <span class="mobile-grade-item">
+                  <span class="mobile-grade-label">노출</span>
+                  <span class="grade ${video.exposure.tone}">${video.exposure.label}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  // ── PC: 기존 9열 테이블 행 ──
   return `
-    <tr>
-      <td><input class="save-check" type="checkbox" value="${escapeHtml(video.videoId)}" aria-label="영상 저장" ${checked} /></td>
-      <td><img class="thumb" src="${escapeHtml(video.thumbnail)}" alt="" loading="lazy" /></td>
-      <td>
+    <tr class="video-row">
+      <td class="cell-check"><input class="save-check" type="checkbox" value="${escapeHtml(video.videoId)}" aria-label="영상 저장" ${checked} /></td>
+      <td class="cell-thumb"><img class="thumb" src="${escapeHtml(video.thumbnail)}" alt="" loading="lazy" /></td>
+      <td class="cell-info">
         <a class="video-title" href="${escapeHtml(video.url)}" target="_blank" rel="noreferrer">${escapeHtml(video.title)}</a>
         <span class="channel">${escapeHtml(video.channelTitle)}</span>
       </td>
-      <td>${formatNumber(video.views)}</td>
-      <td>${formatNumber(video.subscribers)}</td>
-      <td><span class="grade ${video.contribution.tone}">${video.contribution.label}</span></td>
-      <td><span class="grade ${video.performance.tone}">${video.performance.label}</span></td>
-      <td><span class="grade ${video.exposure.tone}">${video.exposure.label}</span></td>
-      <td>${formatNumber(video.totalChannelVideos)}</td>
-      <td class="date-cell">${formatDate(video.publishedAt)}</td>
+      <td class="cell-views">${formatNumber(video.views)}</td>
+      <td class="cell-subs">${formatNumber(video.subscribers)}</td>
+      <td class="cell-contribution"><span class="grade ${video.contribution.tone}">${video.contribution.label}</span></td>
+      <td class="cell-performance"><span class="grade ${video.performance.tone}">${video.performance.label}</span></td>
+      <td class="cell-exposure"><span class="grade ${video.exposure.tone}">${video.exposure.label}</span></td>
+      <td class="cell-channel-vids">${formatNumber(video.totalChannelVideos)}</td>
+      <td class="cell-date">${formatDate(video.publishedAt)}</td>
     </tr>
   `;
 }
+
 
 async function showView(view) {
   state.view = ["search", "saved", "history"].includes(view) ? view : "search";

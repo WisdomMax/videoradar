@@ -9,7 +9,13 @@
         .then((response) => response.text())
         .then((html) => {
           document.open();
-          document.write(html.replaceAll('href="/styles.css"', 'href="/public/styles.css"').replaceAll('src="/app.js"', 'src="/public/app.js"'));
+          document.write(
+            html
+              .replace(/href="\/styles\.css(\?v=[\d\.]+)"/g, 'href="/public/styles.css$1"')
+              .replace(/src="\/app\.js(\?v=[\d\.]+)"/g, 'src="/public/app.js$1"')
+              .replace(/href="\/styles\.css"/g, 'href="/public/styles.css"')
+              .replace(/src="\/app\.js"/g, 'src="/public/app.js"')
+          );
           document.close();
         })
         .catch(() => {

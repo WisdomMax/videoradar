@@ -6,7 +6,7 @@
     <title>VideoRadar</title>
     <link rel="icon" href="/radar-icon.png" />
     <link rel="apple-touch-icon" href="/radar-icon.png" />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/styles.css?v=2.0" />
   </head>
   <body>
     <header class="topbar">
@@ -55,10 +55,14 @@
               </select>
             </label>
             <button type="submit">검색</button>
+            <button id="forceSearchButton" type="button" class="btn-refresh">
+              다시검색
+              <span class="refresh-tooltip">YouTube를 다시 검색합니다.<br>캐시를 무시하고 최신 결과를 가져옵니다.</span>
+            </button>
           </div>
         </form>
-        <div class="tools">
-          <button id="clearButton" type="button">필터 초기화</button>
+        <div class="tools" style="display:none">
+          <button id="clearButton" type="button" style="display:none">필터 초기화</button>
         </div>
       </section>
 
@@ -119,6 +123,9 @@
             </div>
           </fieldset>
           </div>
+          <div class="filter-footer">
+            <button id="clearButton2" type="button" class="btn-filter-reset">필터 초기화</button>
+          </div>
         </aside>
         <div id="overlay" class="overlay"></div>
 
@@ -134,7 +141,7 @@
             </div>
           </div>
           <div id="tableWrap" class="table-wrap">
-            <table>
+            <table id="resultsTable">
               <thead id="resultsHead">
                 <tr>
                   <th>선택</th>
@@ -176,6 +183,6 @@
       <button type="button" class="grade-filter"></button>
     </template>
 
-    <script src="/app.js" type="module"></script>
+    <script src="/app.js?v=2.0" type="module"></script>
   </body>
 </html>
