@@ -46,21 +46,33 @@
 <br />
 
 ## ⚙️ 환경 설정 (Environment Variables)
-프로젝트 실행을 위해 루트 디렉토리에 `.env` 파일을 생성하고 다음 정보를 입력해야 합니다.
+프로젝트 실행을 위해 루트 디렉토리에 `.env` 파일을 생성하고 다음 정보를 입력해야 합니다. (실제 환경에 맞게 수정하세요.)
 
 ```env
 # 서버 설정
-PORT=3000
+PORT=5173
+HOST=127.0.0.1
 
 # 유튜브 API 설정
-YOUTUBE_API_KEY=your_youtube_api_key_here
+YOUTUBE_API_KEY=your_api_key_here
 
-# Supabase 데이터베이스 설정
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_KEY=your_supabase_anon_key
-
-# 캐시 설정 (시간 단위)
+# 캐시 정책 (시간 단위)
+# 동일 검색 조건에 대해 API 호출을 방지하고 로컬/DB 캐시를 유지하는 기간입니다.
 SEARCH_CACHE_TTL_HOURS=168
+
+# 유튜브 API 호출 간격 제어 (ms)
+# API 과사용 방지를 위한 요청 사이의 최소 대기 시간입니다.
+YOUTUBE_MIN_INTERVAL_MS=1500
+
+# 할당량(Quota) 보호 설정
+# 일일 무료 제공량(10,000)보다 약간 낮게 설정하여 초과 사용을 방지합니다.
+YOUTUBE_DAILY_QUOTA_LIMIT=9000
+
+# Supabase 데이터베이스 연동
+# 비워둘 경우 로컬 JSON 파일 기반의 저장소를 사용합니다.
+SUPABASE_URL=your_project_url
+SUPABASE_API_KEY=your_service_role_or_anon_key
+SUPABASE_SCHEMA=public
 ```
 
 <br />
