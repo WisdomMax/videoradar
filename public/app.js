@@ -35,8 +35,10 @@ const state = {
     shortsOnly: false,
     excludeShorts: false
   },
-  sort: { key: "views", direction: "desc" }
+  sort: { key: "views", direction: "desc" },
+  isMobileMode: window.matchMedia("(max-width: 992px)").matches // 현재 모드 저장
 };
+
 
 const elements = {
   apiStatus: document.querySelector("#apiStatus"),
@@ -161,7 +163,20 @@ function bindEvents() {
   }
 
   bindSortHeaders();
+
+  // 창 크기 조절 시 모바일/PC 레이아웃 자동 전환
+  window.addEventListener("resize", () => {
+    const nowMobile = isMobile();
+    if (state.isMobileMode !== nowMobile) {
+      state.isMobileMode = nowMobile;
+      // 현재 영상 데이터나 검색 결과가 있는 경우에만 다시 렌더링
+      if (state.videos.length > 0 || state.searchResults.length > 0) {
+        render();
+      }
+    }
+  });
 }
+
 
 async function search({ force = false } = {}) {
   const query = elements.queryInput.value.trim();
