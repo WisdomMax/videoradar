@@ -89,7 +89,12 @@ export async function searchVideos(env, url) {
 }
 
 async function fetchAndCacheSearch(config, { query, maxResults, order, publishedAfter, publishedBefore, cacheKey }) {
-  const searchItems = await fetchSearchItems(config, { query, maxResults, order, publishedAfter, publishedBefore });
+  // 1. 예상 쿼터 일괄 예약 (검색 API당 100, 비디오/채널 API당 1)
+  // 최대 500개 검색 시: 검색(10회*100) + 비디오(10회*1) + 채널(10회*1) = 약 1020 units
+  const estimatedQuota = Math.ceil(maxResults / 50) * 100 + Math.ceil(maxResults / 50) * 2;
+  await reserveQuota(config, estimatedQuota);
+
+  const searchItems = await fetchSearchItems(config, { query, maxResults, order, publishedAfter, publishedBefore }, true);
   const videoIds = searchItems.map((item) => item.id.videoId).filter(Boolean);
   if (!videoIds.length) {
     const emptyPayload = makePayload(config, query, [], "youtube");
@@ -119,7 +124,7 @@ async function fetchAndCacheSearch(config, { query, maxResults, order, published
   return payload;
 }
 
-async function fetchSearchItems(config, { query, maxResults, order, publishedAfter, publishedBefore }) {
+async function fetchSearchItems(config, { query, maxResults, order, publishedAfter, publishedBefore }, skipQuota = false) {
   const items = [];
   let pageToken = "";
 
@@ -139,7 +144,7 @@ async function fetchSearchItems(config, { query, maxResults, order, publishedAft
     if (publishedBefore) searchParams.set("publishedBefore", `${publishedBefore}T23:59:59Z`);
     if (pageToken) searchParams.set("pageToken", pageToken);
 
-    const search = await youtubeFetch(config, `https://www.googleapis.com/youtube/v3/search?${searchParams}`, 100);
+    const search = await youtubeFetch(config, `https://www.googleapis.com/youtube/v3/search?${searchParams}`, 100, skipQuota);
     items.push(...search.items);
     pageToken = search.nextPageToken || "";
     if (!pageToken || !search.items.length) break;
@@ -157,7 +162,7 @@ async function fetchVideosByIds(config, videoIds) {
         part: "snippet,statistics,contentDetails",
         id: ids.join(",")
       });
-      return youtubeFetch(config, `https://www.googleapis.com/youtube/v3/videos?${videosParams}`, 1);
+      return youtubeFetch(config, `https://www.googleapis.com/youtube/v3/videos?${videosParams}`, 1, true);
     })
   );
   return results.flatMap((r) => r.items);
@@ -172,7 +177,7 @@ async function fetchChannelsByIds(config, channelIds) {
         part: "snippet,statistics",
         id: ids.join(",")
       });
-      return youtubeFetch(config, `https://www.googleapis.com/youtube/v3/channels?${channelParams}`, 1);
+      return youtubeFetch(config, `https://www.googleapis.com/youtube/v3/channels?${channelParams}`, 1, true);
     })
   );
   return results.flatMap((r) => r.items);
@@ -258,8 +263,10 @@ function makeSummary(videos) {
   };
 }
 
-async function youtubeFetch(config, url, quotaCost) {
-  await reserveQuota(config, quotaCost);
+async function youtubeFetch(config, url, quotaCost, skipQuota = false) {
+  if (!skipQuota) {
+    await reserveQuota(config, quotaCost);
+  }
   await waitForYoutubeSlot(config.youtubeMinIntervalMs);
 
   const response = await fetch(url);
