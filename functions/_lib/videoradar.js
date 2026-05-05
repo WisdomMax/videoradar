@@ -59,7 +59,7 @@ export async function searchVideos(env, url) {
   assertSupabase(config);
 
   const query = (url.searchParams.get("q") || "").trim();
-  const maxResults = clamp(Number(url.searchParams.get("maxResults") || 100), 1, 500);
+  const maxResults = clamp(Number(url.searchParams.get("maxResults") || 300), 1, 500);
   const order = url.searchParams.get("order") || "relevance";
   const publishedAfter = url.searchParams.get("publishedAfter") || "";
   const publishedBefore = url.searchParams.get("publishedBefore") || "";
