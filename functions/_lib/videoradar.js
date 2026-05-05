@@ -3,8 +3,19 @@ let lastYoutubeRequestAt = 0;
 
 export async function health(env) {
   const config = makeConfig(env);
+  let quota = null;
+  let storageError = null;
+
+  if (config.hasSupabase) {
+    try {
+      quota = await readUsage(config);
+    } catch (error) {
+      storageError = error.message;
+    }
+  }
+
   return {
-    ok: true,
+    ok: !storageError,
     hasApiKey: Boolean(config.youtubeApiKey),
     cacheTtlHours: Math.round(config.cacheTtlMs / 60 / 60 / 1000),
     youtubeMinIntervalMs: config.youtubeMinIntervalMs,
@@ -12,8 +23,9 @@ export async function health(env) {
     hasSupabaseUrl: Boolean(config.supabaseUrl),
     hasSupabaseApiKey: Boolean(config.supabaseApiKey),
     supabaseSchema: config.supabaseSchema,
-    storage: config.hasSupabase ? "supabase" : "missing-supabase",
-    quota: config.hasSupabase ? await readUsage(config) : null
+    storage: config.hasSupabase ? (storageError ? "error" : "supabase") : "missing-supabase",
+    storageError,
+    quota
   };
 }
 
@@ -47,7 +59,7 @@ export async function searchVideos(env, url) {
   assertSupabase(config);
 
   const query = (url.searchParams.get("q") || "").trim();
-  const maxResults = clamp(Number(url.searchParams.get("maxResults") || 300), 1, 500);
+  const maxResults = clamp(Number(url.searchParams.get("maxResults") || 100), 1, 500);
   const order = url.searchParams.get("order") || "relevance";
   const publishedAfter = url.searchParams.get("publishedAfter") || "";
   const publishedBefore = url.searchParams.get("publishedBefore") || "";
@@ -86,17 +98,24 @@ async function fetchAndCacheSearch(config, { query, maxResults, order, published
     return emptyPayload;
   }
 
-  const videos = { items: await fetchVideosByIds(config, videoIds) };
-  const channelIds = [...new Set(videos.items.map((item) => item.snippet.channelId).filter(Boolean))];
-  const channels = { items: await fetchChannelsByIds(config, channelIds) };
+  // 비디오 정보와 채널 정보를 병렬로 가져오기 위해 준비
+  // 검색 결과에서 바로 채널 ID들을 추출할 수 있음
+  const channelIds = [...new Set(searchItems.map((item) => item.snippet.channelId).filter(Boolean))];
 
-  const channelMap = new Map(channels.items.map((channel) => [channel.id, channel]));
-  const enriched = videos.items.map((video) => normalizeVideo(video, channelMap.get(video.snippet.channelId)));
+  const [videosItems, channelsItems] = await Promise.all([
+    fetchVideosByIds(config, videoIds),
+    fetchChannelsByIds(config, channelIds)
+  ]);
+
+  const channelMap = new Map(channelsItems.map((channel) => [channel.id, channel]));
+  const enriched = videosItems.map((video) => normalizeVideo(video, channelMap.get(video.snippet.channelId)));
   const withScores = scoreVideos(enriched);
   const payload = makePayload(config, query, withScores, "youtube");
 
-  await setCachedSearch(config, cacheKey, payload);
-  await appendHistory(config, payload);
+  await Promise.all([
+    setCachedSearch(config, cacheKey, payload),
+    appendHistory(config, payload)
+  ]);
   return payload;
 }
 
@@ -130,31 +149,33 @@ async function fetchSearchItems(config, { query, maxResults, order, publishedAft
 }
 
 async function fetchVideosByIds(config, videoIds) {
-  const items = [];
-  for (const ids of chunk(videoIds, 50)) {
-    const videosParams = new URLSearchParams({
-      key: config.youtubeApiKey,
-      part: "snippet,statistics,contentDetails",
-      id: ids.join(",")
-    });
-    const videos = await youtubeFetch(config, `https://www.googleapis.com/youtube/v3/videos?${videosParams}`, 1);
-    items.push(...videos.items);
-  }
-  return items;
+  const chunks = chunk(videoIds, 50);
+  const results = await Promise.all(
+    chunks.map((ids) => {
+      const videosParams = new URLSearchParams({
+        key: config.youtubeApiKey,
+        part: "snippet,statistics,contentDetails",
+        id: ids.join(",")
+      });
+      return youtubeFetch(config, `https://www.googleapis.com/youtube/v3/videos?${videosParams}`, 1);
+    })
+  );
+  return results.flatMap((r) => r.items);
 }
 
 async function fetchChannelsByIds(config, channelIds) {
-  const items = [];
-  for (const ids of chunk(channelIds, 50)) {
-    const channelParams = new URLSearchParams({
-      key: config.youtubeApiKey,
-      part: "snippet,statistics",
-      id: ids.join(",")
-    });
-    const channels = await youtubeFetch(config, `https://www.googleapis.com/youtube/v3/channels?${channelParams}`, 1);
-    items.push(...channels.items);
-  }
-  return items;
+  const chunks = chunk(channelIds, 50);
+  const results = await Promise.all(
+    chunks.map((ids) => {
+      const channelParams = new URLSearchParams({
+        key: config.youtubeApiKey,
+        part: "snippet,statistics",
+        id: ids.join(",")
+      });
+      return youtubeFetch(config, `https://www.googleapis.com/youtube/v3/channels?${channelParams}`, 1);
+    })
+  );
+  return results.flatMap((r) => r.items);
 }
 
 function normalizeVideo(video, channel) {
@@ -379,7 +400,7 @@ async function supabaseRequest(config, pathname, options = {}) {
 
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`Supabase 요청 실패: ${response.status} ${detail}`);
+    throw httpError(response.status, `Supabase 요청 실패: ${detail}`);
   }
 
   if (response.status === 204) return null;
@@ -400,7 +421,7 @@ function makeConfig(env) {
     supabaseSchema,
     hasSupabase: Boolean(supabaseUrl && supabaseApiKey),
     cacheTtlMs: Number(env.SEARCH_CACHE_TTL_HOURS || 24) * 60 * 60 * 1000,
-    youtubeMinIntervalMs: Number(env.YOUTUBE_MIN_INTERVAL_MS || 1500),
+    youtubeMinIntervalMs: Number(env.YOUTUBE_MIN_INTERVAL_MS || 0),
     youtubeDailyQuotaLimit: Number(env.YOUTUBE_DAILY_QUOTA_LIMIT || 9000)
   };
 }
@@ -423,8 +444,9 @@ export function json(data, status = 200) {
 
 export function jsonError(error) {
   const status = error.status || 500;
-  const message = error.expose ? error.message : status === 500 ? "서버 처리 중 오류가 발생했습니다." : error.message;
-  console.error(error);
+  // 에러 메시지를 더 구체적으로 표시 (특히 Supabase 관련)
+  const message = error.expose ? error.message : (status === 500 ? `서버 내부 오류: ${error.message}` : error.message);
+  console.error("[Server Error]", error);
   return json({ error: message }, status);
 }
 

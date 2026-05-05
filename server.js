@@ -24,7 +24,7 @@ const supabaseSchema =
   /^[A-Za-z_][A-Za-z0-9_]*$/.test(rawSupabaseSchema) && !rawSupabaseSchema.startsWith("sb_") ? rawSupabaseSchema : "public";
 const hasSupabase = Boolean(supabaseUrl && supabaseApiKey);
 const cacheTtlMs = Number(process.env.SEARCH_CACHE_TTL_HOURS || 168) * 60 * 60 * 1000;
-const youtubeMinIntervalMs = Number(process.env.YOUTUBE_MIN_INTERVAL_MS || 1500);
+const youtubeMinIntervalMs = Number(process.env.YOUTUBE_MIN_INTERVAL_MS || 0);
 const youtubeDailyQuotaLimit = Number(process.env.YOUTUBE_DAILY_QUOTA_LIMIT || 9000);
 let lastYoutubeRequestAt = 0;
 const activeSearches = new Map();
